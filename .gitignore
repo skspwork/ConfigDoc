@@ -1,7 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.config_doc
+.claude
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 
@@ -9,7 +11,7 @@
 /coverage
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
@@ -34,3 +36,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# npm package
+*.tgz
+
+# packages specific ignores
+packages/web/.next/
+packages/web/node_modules/
+packages/web/out/
+packages/web/*.tsbuildinfo
+packages/web/.turbo/
+
+# old structure (can be removed after migration)
+config-doc-web/

@@ -1,0 +1,13 @@
+{
+  "name": "config-doc-cli",
+  "version": "0.1.0",
+  "description": "CLI interface for ConfigDoc",
+  "main": "bin/config-doc.js",
+  "bin": {
+    "config-doc": "bin/config-doc.js"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

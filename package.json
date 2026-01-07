@@ -1,0 +1,51 @@
+{
+  "name": "@skspwork/config-doc",
+  "version": "0.1.0",
+  "description": "Interactive documentation tool for JSON configuration files (appsettings.json)",
+  "keywords": [
+    "config",
+    "configuration",
+    "documentation",
+    "appsettings",
+    "json",
+    "dotnet",
+    "cli"
+  ],
+  "homepage": "https://github.com/skspwork/ConfigDoc#readme",
+  "bugs": {
+    "url": "https://github.com/skspwork/ConfigDoc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skspwork/ConfigDoc.git"
+  },
+  "license": "MIT",
+  "author": "skspwork",
+  "bin": {
+    "config-doc": "./packages/cli/bin/config-doc.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "packages/cli/bin",
+    "packages/cli/package.json",
+    "packages/web/.next",
+    "packages/web/package.json",
+    "packages/web/package-lock.json",
+    "packages/web/node_modules",
+    "packages/web/next.config.ts",
+    "packages/web/public",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "cd packages/web && npm install && npm run build",
+    "prepublishOnly": "npm run build",
+    "test:local": "npm pack && npm install -g skspwork-config-doc-0.1.0.tgz",
+    "unlink": "npm unlink -g @skspwork/config-doc"
+  }
+}
