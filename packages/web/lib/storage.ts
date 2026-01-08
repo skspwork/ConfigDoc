@@ -38,7 +38,20 @@ export class StorageService {
   }
 
   private getDocsFileName(configFilePath: string): string {
-    const fileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
-    return fileName.replace('.json', '.docs.json');
+    // 絶対パスの場合は、パス全体からハッシュを生成して一意にする
+    const isAbsolute = /^[a-zA-Z]:[/\\]/.test(configFilePath) || configFilePath.startsWith('/');
+
+    if (isAbsolute) {
+      // 絶対パスの場合：パスを正規化してBase64エンコード（ファイル名として安全な形式）
+      const normalized = configFilePath.replace(/[/\\]/g, '_').replace(/:/g, '');
+      const fileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
+      const baseName = fileName.replace('.json', '');
+      // ファイル名の前にパスのハッシュを追加して一意性を確保
+      return `${normalized.substring(0, 50)}_${baseName}.docs.json`;
+    } else {
+      // 相対パスの場合：従来通り
+      const fileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
+      return fileName.replace('.json', '.docs.json');
+    }
   }
 }

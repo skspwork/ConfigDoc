@@ -8,6 +8,7 @@ interface ExportDialogProps {
   onClose: () => void;
   onExport: (settings: ExportSettings) => void;
   currentSettings?: ExportSettings;
+  rootPath?: string;
 }
 
 const DEFAULT_SETTINGS: ExportSettings = {
@@ -16,7 +17,7 @@ const DEFAULT_SETTINGS: ExportSettings = {
   autoExport: true
 };
 
-export function ExportDialog({ isOpen, onClose, onExport, currentSettings }: ExportDialogProps) {
+export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootPath = '.' }: ExportDialogProps) {
   const [settings, setSettings] = useState<ExportSettings>(currentSettings || DEFAULT_SETTINGS);
   const [isExporting, setIsExporting] = useState(false);
   const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(false);
@@ -162,7 +163,7 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings }: Exp
       {/* ファイルブラウザ */}
       <FileBrowser
         isOpen={isFileBrowserOpen}
-        currentPath="."
+        currentPath={rootPath}
         onSelect={handleFileSelect}
         onClose={() => setIsFileBrowserOpen(false)}
         multiSelect={false}

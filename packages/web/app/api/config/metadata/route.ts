@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { FileSystemService } from '@/lib/fileSystem';
-import { ProjectMetadata } from '@/types';
+import { ProjectConfigFiles } from '@/types';
 import { HtmlGenerator } from '@/lib/htmlGenerator';
 import { getRootPath } from '@/lib/getRootPath';
 
@@ -10,7 +10,7 @@ export async function GET() {
     const rootPath = getRootPath();
     const fsService = new FileSystemService(rootPath);
 
-    const metadata = await fsService.loadMetadata();
+    const metadata = await fsService.loadConfigFiles();
 
     return NextResponse.json({
       success: true,
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const fsService = new FileSystemService(rootPath);
 
     // メタデータを作成または更新
-    const existingMetadata = await fsService.loadMetadata();
+    const existingMetadata = await fsService.loadConfigFiles();
 
     // 削除された設定ファイルの docs.json を削除
     const deletedDocsFileNames: string[] = [];
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const metadata: ProjectMetadata = {
+    const metadata: ProjectConfigFiles = {
       projectName: existingMetadata?.projectName || path.basename(rootPath),
       createdAt: existingMetadata?.createdAt || new Date().toISOString(),
       lastModified: new Date().toISOString(),
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       })
     };
 
-    await fsService.saveMetadata(metadata);
+    await fsService.saveConfigFiles(metadata);
 
     // HTMLを自動生成
     try {

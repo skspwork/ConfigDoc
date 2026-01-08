@@ -27,6 +27,7 @@ export default function Home() {
   const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [rootPath, setRootPath] = useState<string>('.');
 
   // 編集中のプロパティドキュメント
   const [editingDoc, setEditingDoc] = useState<PropertyDoc | null>(null);
@@ -70,15 +71,20 @@ export default function Home() {
         const response = await fetch('/api/project');
         const result = await response.json();
 
-        if (result.success && result.data.hasConfigDoc) {
-          // メタデータを読み込む
-          const metaResponse = await fetch('/api/config/metadata');
-          const metaResult = await metaResponse.json();
+        if (result.success) {
+          // ルートパスを設定
+          setRootPath(result.data.rootPath);
 
-          if (metaResult.success && metaResult.data?.configFiles) {
-            // 保存されている設定ファイルを読み込む
-            for (const configFile of metaResult.data.configFiles) {
-              await loadConfigFile(configFile.filePath);
+          if (result.data.hasConfigDoc) {
+            // メタデータを読み込む
+            const metaResponse = await fetch('/api/config/metadata');
+            const metaResult = await metaResponse.json();
+
+            if (metaResult.success && metaResult.data?.configFiles) {
+              // 保存されている設定ファイルを読み込む
+              for (const configFile of metaResult.data.configFiles) {
+                await loadConfigFile(configFile.filePath);
+              }
             }
           }
         }
@@ -531,7 +537,7 @@ export default function Home() {
       {/* ファイルブラウザ */}
       <FileBrowser
         isOpen={isFileBrowserOpen}
-        currentPath="."
+        currentPath={rootPath}
         multiSelect={true}
         filterJsonOnly={true}
         onSelect={(filePaths) => {
@@ -547,6 +553,7 @@ export default function Home() {
         onClose={() => setIsExportDialogOpen(false)}
         onExport={handleExport}
         currentSettings={exportSettings}
+        rootPath={rootPath}
       />
 
       {/* トースト通知 */}

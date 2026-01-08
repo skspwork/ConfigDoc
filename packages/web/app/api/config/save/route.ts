@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
     );
 
     // メタデータの最終更新時刻を更新
-    const metadata = await fsService.loadMetadata();
+    const metadata = await fsService.loadConfigFiles();
     if (metadata) {
       metadata.lastModified = new Date().toISOString();
-      await fsService.saveMetadata(metadata);
+      await fsService.saveConfigFiles(metadata);
     }
 
     // HTMLを自動生成

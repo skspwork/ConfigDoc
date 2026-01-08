@@ -49,7 +49,7 @@ config-doc
 your-project/
 ├── appsettings.json          # 設定ファイル
 ├── .config_doc/              # ConfigDoc が作成（自動生成）
-│   ├── metadata.json         # プロジェクトメタデータ
+│   ├── config_files.json     # 設定ファイル情報
 │   ├── docs/                 # ドキュメントファイル
 │   │   └── appsettings.docs.json
 │   └── index.html            # エクスポートされたHTML

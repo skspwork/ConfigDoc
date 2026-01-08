@@ -1,5 +1,5 @@
 import { FileSystemService } from './fileSystem';
-import { ProjectMetadata, ConfigDocs } from '@/types';
+import { ProjectConfigFiles, ConfigDocs } from '@/types';
 
 interface ConfigWithDocs {
   filePath: string;
@@ -17,7 +17,7 @@ export class HtmlGenerator {
 
   async generateHtml(): Promise<string> {
     // メタデータを読み込む
-    const metadata = await this.fsService.loadMetadata();
+    const metadata = await this.fsService.loadConfigFiles();
     if (!metadata || !metadata.configFiles || metadata.configFiles.length === 0) {
       return this.generateEmptyHtml();
     }
@@ -70,7 +70,7 @@ export class HtmlGenerator {
 </html>`;
   }
 
-  private generateFullHtml(metadata: ProjectMetadata, configs: ConfigWithDocs[]): string {
+  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[]): string {
     const configsJson = JSON.stringify(configs, null, 2);
 
     return `<!DOCTYPE html>

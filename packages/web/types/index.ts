@@ -1,6 +1,6 @@
 // types/index.ts
 
-export interface ProjectMetadata {
+export interface ProjectConfigFiles {
   projectName: string;
   createdAt: string;
   lastModified: string;

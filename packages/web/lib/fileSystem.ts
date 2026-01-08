@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ProjectMetadata, ConfigDocs, FileSystemItem } from '@/types';
+import { ProjectConfigFiles, ConfigDocs, FileSystemItem } from '@/types';
 
 export class FileSystemService {
   private configDocDir = '.config_doc';
@@ -20,38 +20,40 @@ export class FileSystemService {
     }
   }
 
-  async loadMetadata(): Promise<ProjectMetadata | null> {
-    const metadataPath = path.join(
+  async loadConfigFiles(): Promise<ProjectConfigFiles | null> {
+    const configFilesPath = path.join(
       this.rootPath,
       this.configDocDir,
-      'metadata.json'
+      'config_files.json'
     );
     try {
-      const content = await fs.readFile(metadataPath, 'utf-8');
+      const content = await fs.readFile(configFilesPath, 'utf-8');
       return JSON.parse(content);
     } catch {
       return null;
     }
   }
 
-  async saveMetadata(metadata: ProjectMetadata): Promise<void> {
+  async saveConfigFiles(configFiles: ProjectConfigFiles): Promise<void> {
     // ディレクトリが存在することを確認
     await this.ensureConfigDocDir();
 
     const metadataPath = path.join(
       this.rootPath,
       this.configDocDir,
-      'metadata.json'
+      'config_files.json'
     );
     await fs.writeFile(
       metadataPath,
-      JSON.stringify(metadata, null, 2),
+      JSON.stringify(configFiles, null, 2),
       'utf-8'
     );
   }
 
   async loadConfigFile(filePath: string): Promise<any> {
-    const fullPath = path.join(this.rootPath, filePath);
+    // 絶対パスか相対パスかを判定
+    const isAbsolute = path.isAbsolute(filePath);
+    const fullPath = isAbsolute ? path.normalize(filePath) : path.join(this.rootPath, filePath);
     const content = await fs.readFile(fullPath, 'utf-8');
     return JSON.parse(content);
   }
@@ -97,17 +99,24 @@ export class FileSystemService {
   }
 
   async browseDirectory(dirPath: string): Promise<FileSystemItem[]> {
-    const fullPath = path.join(this.rootPath, dirPath);
+    // 絶対パスか相対パスかを判定
+    const isAbsolute = path.isAbsolute(dirPath);
+    const fullPath = isAbsolute ? path.normalize(dirPath) : path.join(this.rootPath, dirPath);
+
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
 
     return entries
       .filter(entry => !entry.name.startsWith('.'))
-      .map(entry => ({
-        name: entry.name,
-        path: path.join(dirPath, entry.name),
-        type: entry.isDirectory() ? 'directory' as const : 'file' as const,
-        extension: entry.isFile() ? path.extname(entry.name) : undefined
-      }))
+      .map(entry => {
+        // 絶対パスとして返す
+        const absolutePath = path.join(fullPath, entry.name);
+        return {
+          name: entry.name,
+          path: absolutePath,
+          type: entry.isDirectory() ? 'directory' as const : 'file' as const,
+          extension: entry.isFile() ? path.extname(entry.name) : undefined
+        };
+      })
       .sort((a, b) => {
         // ディレクトリを先に表示
         if (a.type !== b.type) {

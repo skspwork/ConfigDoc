@@ -28,16 +28,16 @@ export function FileBrowser({
 
   useEffect(() => {
     if (isOpen) {
-      loadDirectory(path);
-      // ダイアログが開かれた時のみ選択をクリア（パス変更時はクリアしない）
-      if (path === currentPath) {
-        setSelectedFiles([]);
-      }
+      // ダイアログが開かれた時、currentPathでパスをリセット
+      setPath(currentPath);
+      loadDirectory(currentPath);
+      setSelectedFiles([]);
     }
-  }, [isOpen]);
+  }, [isOpen, currentPath]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && path !== currentPath) {
+      // パスが変更された時（ナビゲーション時）のみロード
       loadDirectory(path);
     }
   }, [path]);
@@ -59,6 +59,8 @@ export function FileBrowser({
             )
           : data.data.items;
         setItems(filtered);
+      } else {
+        console.error('API returned error:', data.error);
       }
     } catch (error) {
       console.error('Failed to load directory:', error);
@@ -87,8 +89,23 @@ export function FileBrowser({
   };
 
   const handleGoUp = () => {
-    const parentPath = path.split(/[/\\]/).slice(0, -1).join('/') || '.';
-    setPath(parentPath);
+    // Windowsのパス区切り文字を考慮してパスを正規化
+    const normalizedPath = path.replace(/\//g, '\\');
+    const pathParts = normalizedPath.split('\\').filter(p => p);
+
+    if (pathParts.length > 1) {
+      // 親ディレクトリへ移動
+      const parentParts = pathParts.slice(0, -1);
+      // Windowsのドライブルートの場合は \ を追加（例: C: -> C:\）
+      const parentPath = parentParts.length === 1 && parentParts[0].includes(':')
+        ? parentParts[0] + '\\'
+        : parentParts.join('\\');
+      setPath(parentPath);
+    } else if (pathParts.length === 1 && !pathParts[0].includes(':')) {
+      // ルート以外の単一ディレクトリの場合
+      setPath('.');
+    }
+    // ドライブルート（例: C:\）の場合は何もしない
     // ディレクトリ移動時は選択を保持
   };
 
