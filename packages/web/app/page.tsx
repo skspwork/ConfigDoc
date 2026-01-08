@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ConfigDocs, PropertyDoc } from '@/types';
+import { ConfigDocs, PropertyDoc, ExportSettings } from '@/types';
 import { ConfigTree } from '@/components/ConfigTree';
 import { FileBrowser } from '@/components/FileBrowser';
+import { ExportDialog } from '@/components/ExportDialog';
 import { ToastContainer, ToastType } from '@/components/Toast';
-import { FolderOpenIcon, XIcon, SaveIcon } from 'lucide-react';
+import { FolderOpenIcon, XIcon, SaveIcon, DownloadIcon } from 'lucide-react';
 
 interface LoadedConfig {
   filePath: string;
@@ -24,12 +25,16 @@ export default function Home() {
   const [activeConfigIndex, setActiveConfigIndex] = useState<number>(0);
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // 編集中のプロパティドキュメント
   const [editingDoc, setEditingDoc] = useState<PropertyDoc | null>(null);
   const [originalDoc, setOriginalDoc] = useState<PropertyDoc | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // エクスポート設定
+  const [exportSettings, setExportSettings] = useState<ExportSettings | undefined>();
 
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -76,6 +81,13 @@ export default function Home() {
               await loadConfigFile(configFile.filePath);
             }
           }
+        }
+
+        // エクスポート設定を読み込む
+        const exportResponse = await fetch('/api/export/settings');
+        const exportResult = await exportResponse.json();
+        if (exportResult.success) {
+          setExportSettings(exportResult.data);
         }
       } catch (error) {
         console.error('Failed to load saved configs:', error);
@@ -273,12 +285,85 @@ export default function Home() {
         setOriginalDoc(propertyDoc);
         setHasUnsavedChanges(false);
         showToast('保存しました');
+
+        // 自動エクスポートが有効な場合
+        if (exportSettings?.autoExport) {
+          await handleAutoExport();
+        }
       } else {
         showToast('保存に失敗しました: ' + result.error, 'error');
       }
     } catch (error) {
       console.error('Failed to save:', error);
       showToast('保存中にエラーが発生しました', 'error');
+    }
+  };
+
+  const handleAutoExport = async () => {
+    if (!exportSettings) return;
+
+    try {
+      const response = await fetch('/api/export/html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          outputPath: exportSettings.outputPath
+        })
+      });
+
+      if (response.ok) {
+        // エクスポート設定を更新
+        const updatedSettings = {
+          ...exportSettings,
+          lastExportedAt: new Date().toISOString()
+        };
+        setExportSettings(updatedSettings);
+
+        // 設定をファイルに保存
+        await fetch('/api/export/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: updatedSettings })
+        });
+      }
+    } catch (error) {
+      console.error('Auto export failed:', error);
+    }
+  };
+
+  const handleExport = async (settings: ExportSettings) => {
+    try {
+      const response = await fetch('/api/export/html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          outputPath: settings.outputPath
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // エクスポート設定を更新
+        const updatedSettings = {
+          ...settings,
+          lastExportedAt: new Date().toISOString()
+        };
+        setExportSettings(updatedSettings);
+
+        // 設定をファイルに保存
+        await fetch('/api/export/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings: updatedSettings })
+        });
+
+        showToast(`エクスポートしました: ${result.outputPath || settings.outputPath}`);
+      } else {
+        showToast('エクスポートに失敗しました: ' + result.error, 'error');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      showToast('エクスポート中にエラーが発生しました', 'error');
     }
   };
 
@@ -290,6 +375,14 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-gray-800">
             ConfigDoc Web
           </h1>
+          <button
+            onClick={() => setIsExportDialogOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            title="HTMLエクスポート"
+          >
+            <DownloadIcon className="w-5 h-5" />
+            エクスポート
+          </button>
         </div>
       </header>
 
@@ -446,6 +539,14 @@ export default function Home() {
           setIsFileBrowserOpen(false);
         }}
         onClose={() => setIsFileBrowserOpen(false)}
+      />
+
+      {/* エクスポートダイアログ */}
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        onExport={handleExport}
+        currentSettings={exportSettings}
       />
 
       {/* トースト通知 */}

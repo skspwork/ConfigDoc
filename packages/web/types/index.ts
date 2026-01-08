@@ -43,3 +43,12 @@ export interface FileSystemItem {
   type: 'file' | 'directory';
   extension?: string;
 }
+
+export type ExportFormat = 'html';
+
+export interface ExportSettings {
+  outputPath: string;              // 出力先パス（相対パスまたは絶対パス）
+  format: ExportFormat;            // 出力形式
+  autoExport: boolean;             // 保存時に自動エクスポート
+  lastExportedAt?: string;         // 最後にエクスポートした日時
+}
