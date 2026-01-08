@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ExportSettings, ExportFormat } from '@/types';
-import { XIcon, DownloadIcon, FolderIcon } from 'lucide-react';
-import { FileBrowser } from './FileBrowser';
+import { XIcon, DownloadIcon } from 'lucide-react';
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -20,13 +19,25 @@ const DEFAULT_SETTINGS: ExportSettings = {
 export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootPath = '.' }: ExportDialogProps) {
   const [settings, setSettings] = useState<ExportSettings>(currentSettings || DEFAULT_SETTINGS);
   const [isExporting, setIsExporting] = useState(false);
-  const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(false);
 
   useEffect(() => {
     if (currentSettings) {
       setSettings(currentSettings);
     }
   }, [currentSettings]);
+
+  // 絶対パスを計算
+  const absoluteOutputPath = useMemo(() => {
+    if (!settings.outputPath) return '';
+    // 絶対パスの場合はそのまま、相対パスの場合はrootPathと結合
+    if (settings.outputPath.match(/^[a-zA-Z]:[/\\]/) || settings.outputPath.startsWith('/')) {
+      return settings.outputPath;
+    }
+    // Windowsのパス結合（簡易版）
+    const normalized = rootPath.replace(/\//g, '\\');
+    const outputNormalized = settings.outputPath.replace(/\//g, '\\');
+    return `${normalized}\\${outputNormalized}`;
+  }, [settings.outputPath, rootPath]);
 
   if (!isOpen) return null;
 
@@ -39,12 +50,6 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
       console.error('Export failed:', error);
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const handleFileSelect = (filePaths: string[]) => {
-    if (filePaths.length > 0) {
-      setSettings({ ...settings, outputPath: filePaths[0] });
     }
   };
 
@@ -69,27 +74,11 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
             <label className="block text-sm font-medium text-gray-700 mb-2">
               出力先パス
             </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={settings.outputPath}
-                  onChange={(e) => setSettings({ ...settings, outputPath: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder=".config_doc/index.html"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFileBrowserOpen(true)}
-                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                title="ファイルを選択"
-              >
-                <FolderIcon className="w-5 h-5 text-gray-600" />
-              </button>
+            <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-700 font-mono break-all">
+              {absoluteOutputPath}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              実行ディレクトリからの相対パスまたは絶対パス
+              HTMLファイルの出力先
             </p>
           </div>
 
@@ -159,16 +148,6 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
           </button>
         </div>
       </div>
-
-      {/* ファイルブラウザ */}
-      <FileBrowser
-        isOpen={isFileBrowserOpen}
-        currentPath={rootPath}
-        onSelect={handleFileSelect}
-        onClose={() => setIsFileBrowserOpen(false)}
-        multiSelect={false}
-        filterJsonOnly={false}
-      />
     </div>
   );
 }
