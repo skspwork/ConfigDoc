@@ -30,17 +30,16 @@ export function FileBrowser({
     if (isOpen) {
       // ダイアログが開かれた時、currentPathでパスをリセット
       setPath(currentPath);
-      loadDirectory(currentPath);
       setSelectedFiles([]);
     }
   }, [isOpen, currentPath]);
 
   useEffect(() => {
-    if (isOpen && path !== currentPath) {
-      // パスが変更された時（ナビゲーション時）のみロード
+    if (isOpen) {
+      // パスが変更された時にディレクトリをロード
       loadDirectory(path);
     }
-  }, [path]);
+  }, [isOpen, path]);
 
   const loadDirectory = async (dirPath: string) => {
     setLoading(true);
@@ -96,10 +95,19 @@ export function FileBrowser({
     if (pathParts.length > 1) {
       // 親ディレクトリへ移動
       const parentParts = pathParts.slice(0, -1);
-      // Windowsのドライブルートの場合は \ を追加（例: C: -> C:\）
-      const parentPath = parentParts.length === 1 && parentParts[0].includes(':')
-        ? parentParts[0] + '\\'
-        : parentParts.join('\\');
+
+      // パスを再構築
+      let parentPath: string;
+      if (parentParts.length === 1 && parentParts[0].includes(':')) {
+        // ドライブルートの場合（例: C:\ ）
+        parentPath = parentParts[0] + '\\';
+      } else if (parentParts[0].includes(':')) {
+        // ドライブレターを含むパスの場合（例: C:\sksp）
+        parentPath = parentParts[0] + '\\' + parentParts.slice(1).join('\\');
+      } else {
+        // 相対パスの場合
+        parentPath = parentParts.join('\\');
+      }
       setPath(parentPath);
     } else if (pathParts.length === 1 && !pathParts[0].includes(':')) {
       // ルート以外の単一ディレクトリの場合
