@@ -32,6 +32,31 @@ export function ConfigTree({
     setExpandedNodes(newExpanded);
   };
 
+  // すべてのノードパスを収集
+  const getAllNodePaths = (nodes: ConfigTreeNode[]): string[] => {
+    const paths: string[] = [];
+    const collectPaths = (node: ConfigTreeNode) => {
+      if (node.children && node.children.length > 0) {
+        paths.push(node.fullPath);
+        node.children.forEach(collectPaths);
+      }
+    };
+    nodes.forEach(collectPaths);
+    return paths;
+  };
+
+  // すべて展開
+  const expandAll = () => {
+    const tree = ConfigParser.buildTree(config);
+    const allPaths = getAllNodePaths(tree);
+    setExpandedNodes(new Set(allPaths));
+  };
+
+  // すべて閉じる
+  const collapseAll = () => {
+    setExpandedNodes(new Set());
+  };
+
   const renderNode = (node: ConfigTreeNode, depth: number = 0) => {
     const hasDoc = docs.properties[node.fullPath] !== undefined;
     const isExpanded = expandedNodes.has(node.fullPath);
@@ -99,8 +124,25 @@ export function ConfigTree({
   const tree = ConfigParser.buildTree(config);
 
   return (
-    <div className="h-full overflow-y-auto border rounded-lg bg-white">
-      <div className="p-2">
+    <div className="h-full flex flex-col border rounded-lg bg-white">
+      {/* ツールバー */}
+      <div className="flex items-center gap-2 p-2 border-b bg-gray-50">
+        <button
+          onClick={expandAll}
+          className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+        >
+          すべて展開
+        </button>
+        <button
+          onClick={collapseAll}
+          className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+        >
+          すべて閉じる
+        </button>
+      </div>
+
+      {/* ツリー表示 */}
+      <div className="flex-1 overflow-y-auto p-2">
         {tree.map((node) => renderNode(node))}
       </div>
     </div>
