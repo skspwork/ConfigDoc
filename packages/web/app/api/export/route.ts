@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HtmlGenerator } from '@/lib/htmlGenerator';
 import { MarkdownGenerator } from '@/lib/markdownGenerator';
+import { MarkdownTableGenerator } from '@/lib/markdownTableGenerator';
 import { FileSystemService } from '@/lib/fileSystem';
 import { getRootPath } from '@/lib/getRootPath';
 import path from 'path';
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
     if (format === 'markdown') {
       const generator = new MarkdownGenerator(rootPath);
       content = await generator.generateMarkdown();
+    } else if (format === 'markdown-table') {
+      const generator = new MarkdownTableGenerator(rootPath);
+      content = await generator.generateMarkdownTable();
     } else {
       // デフォルトはHTML
       const generator = new HtmlGenerator(rootPath);
@@ -27,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 出力ファイル名を決定（拡張子付き）
-    const extension = format === 'markdown' ? 'md' : 'html';
+    const extension = (format === 'markdown' || format === 'markdown-table') ? 'md' : 'html';
     const outputFileName = `${fileName}.${extension}`;
 
     // 出力パス: .config_doc/output/{fileName}.{extension}

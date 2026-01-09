@@ -43,7 +43,7 @@ export interface FileSystemItem {
   extension?: string;
 }
 
-export type ExportFormat = 'html' | 'markdown';
+export type ExportFormat = 'html' | 'markdown' | 'markdown-table';
 
 // チーム共有設定（settings.json）
 export interface ProjectSettings {

@@ -30,7 +30,7 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
   const absoluteOutputPath = useMemo(() => {
     const normalized = rootPath.replace(/\//g, '\\');
     const fileName = settings.fileName || 'config-doc';
-    const extension = settings.format === 'markdown' ? 'md' : 'html';
+    const extension = (settings.format === 'markdown' || settings.format === 'markdown-table') ? 'md' : 'html';
     return `${normalized}\\.config_doc\\output\\${fileName}.${extension}`;
   }, [settings.format, settings.fileName, rootPath]);
 
@@ -73,7 +73,11 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               {absoluteOutputPath}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              {settings.format === 'html' ? 'HTMLファイルの出力先' : 'Markdownファイルの出力先'}
+              {settings.format === 'html'
+                ? 'HTMLファイルの出力先'
+                : settings.format === 'markdown-table'
+                ? 'Markdownテーブル形式ファイルの出力先'
+                : 'Markdownファイルの出力先'}
             </p>
           </div>
 
@@ -106,10 +110,13 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
             >
               <option value="html">HTML</option>
               <option value="markdown">Markdown</option>
+              <option value="markdown-table">Markdown (テーブル形式)</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
               {settings.format === 'html'
                 ? 'スタイル付きのHTMLファイルとして出力します'
+                : settings.format === 'markdown-table'
+                ? 'Markdownテーブル形式で出力します（プロパティ名、説明、値、備考）'
                 : 'テキストベースのMarkdownファイルとして出力します'}
             </p>
           </div>
