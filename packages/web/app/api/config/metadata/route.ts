@@ -66,10 +66,15 @@ export async function POST(request: NextRequest) {
         const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
         const docsFileName = fileName.replace('.json', '.docs.json');
 
+        // 絶対パスの場合は相対パスに変換
+        const relativePath = path.isAbsolute(filePath)
+          ? path.relative(rootPath, filePath)
+          : filePath;
+
         return {
           id: `config-${index + 1}`,
           fileName,
-          filePath,
+          filePath: relativePath,
           docsFileName
         };
       })

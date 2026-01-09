@@ -155,12 +155,36 @@ export default function Home() {
     }
   };
 
+  // 絶対パスを相対パスに変換（Windows/Unix対応）
+  const toRelativePath = (absolutePath: string, basePath: string): string => {
+    // パスの正規化（バックスラッシュをスラッシュに統一）
+    const normalizeSlash = (p: string) => p.replace(/\\/g, '/');
+    const normAbsolute = normalizeSlash(absolutePath);
+    const normBase = normalizeSlash(basePath);
+
+    // 既に相対パスの場合はそのまま返す
+    if (!normAbsolute.match(/^[a-zA-Z]:\//) && !normAbsolute.startsWith('/')) {
+      return absolutePath;
+    }
+
+    // ベースパスで始まっている場合は相対パスに変換
+    if (normAbsolute.startsWith(normBase)) {
+      const relative = normAbsolute.substring(normBase.length);
+      return relative.startsWith('/') ? relative.substring(1) : relative;
+    }
+
+    return absolutePath;
+  };
+
   const handleSelectConfigFiles = async (filePaths: string[]) => {
     const newConfigs: LoadedConfig[] = [];
 
     for (const filePath of filePaths) {
-      // 既に読み込まれているか確認
-      if (loadedConfigs.some(c => c.filePath === filePath)) {
+      // 絶対パスを相対パスに変換
+      const relativePath = toRelativePath(filePath, rootPath);
+
+      // 既に読み込まれているか確認（相対パスで比較）
+      if (loadedConfigs.some(c => c.filePath === relativePath)) {
         continue;
       }
 
@@ -174,7 +198,7 @@ export default function Home() {
         const result = await response.json();
         if (result.success) {
           newConfigs.push({
-            filePath,
+            filePath: relativePath,  // 相対パスで保存
             configData: result.data.configData,
             docs: result.data.docs
           });
