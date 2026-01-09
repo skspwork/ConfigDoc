@@ -11,9 +11,9 @@ interface ExportDialogProps {
 }
 
 const DEFAULT_SETTINGS: ExportSettings = {
-  outputPath: '.config_doc/index.html',
   format: 'html',
-  autoExport: true
+  autoExport: true,
+  fileName: 'config-doc'
 };
 
 export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootPath = '.' }: ExportDialogProps) {
@@ -26,18 +26,13 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
     }
   }, [currentSettings]);
 
-  // 絶対パスを計算
+  // フォーマットに応じて出力先パスを決定
   const absoluteOutputPath = useMemo(() => {
-    if (!settings.outputPath) return '';
-    // 絶対パスの場合はそのまま、相対パスの場合はrootPathと結合
-    if (settings.outputPath.match(/^[a-zA-Z]:[/\\]/) || settings.outputPath.startsWith('/')) {
-      return settings.outputPath;
-    }
-    // Windowsのパス結合（簡易版）
     const normalized = rootPath.replace(/\//g, '\\');
-    const outputNormalized = settings.outputPath.replace(/\//g, '\\');
-    return `${normalized}\\${outputNormalized}`;
-  }, [settings.outputPath, rootPath]);
+    const fileName = settings.fileName || 'config-doc';
+    const extension = settings.format === 'markdown' ? 'md' : 'html';
+    return `${normalized}\\.config_doc\\output\\${fileName}.${extension}`;
+  }, [settings.format, settings.fileName, rootPath]);
 
   if (!isOpen) return null;
 
@@ -78,7 +73,24 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               {absoluteOutputPath}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              HTMLファイルの出力先
+              {settings.format === 'html' ? 'HTMLファイルの出力先' : 'Markdownファイルの出力先'}
+            </p>
+          </div>
+
+          {/* ファイル名 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ファイル名
+            </label>
+            <input
+              type="text"
+              value={settings.fileName || 'config-doc'}
+              onChange={(e) => setSettings({ ...settings, fileName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="config-doc"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              拡張子なしのファイル名を指定します（チーム共有設定）
             </p>
           </div>
 
@@ -93,9 +105,12 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="html">HTML</option>
+              <option value="markdown">Markdown</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              現在はHTMLのみサポートしています
+              {settings.format === 'html'
+                ? 'スタイル付きのHTMLファイルとして出力します'
+                : 'テキストベースのMarkdownファイルとして出力します'}
             </p>
           </div>
 
@@ -140,7 +155,7 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
           </button>
           <button
             onClick={handleExport}
-            disabled={isExporting || !settings.outputPath}
+            disabled={isExporting}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <DownloadIcon className="w-4 h-4" />

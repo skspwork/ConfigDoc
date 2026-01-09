@@ -2,38 +2,54 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRootPath } from '@/lib/getRootPath';
 import path from 'path';
 import fs from 'fs/promises';
-import { ExportSettings } from '@/types';
+import { ExportSettings, UserSettings, ProjectSettings } from '@/types';
 
-const SETTINGS_FILE = 'settings.local.json';
+const USER_SETTINGS_FILE = '.user.local.json';
+const PROJECT_SETTINGS_FILE = 'settings.json';
 const CONFIG_DOC_DIR = '.config_doc';
 
 // GET: エクスポート設定を読み込み
 export async function GET() {
   try {
     const rootPath = getRootPath();
-    const settingsPath = path.join(rootPath, CONFIG_DOC_DIR, SETTINGS_FILE);
+    const userSettingsPath = path.join(rootPath, CONFIG_DOC_DIR, USER_SETTINGS_FILE);
+    const projectSettingsPath = path.join(rootPath, CONFIG_DOC_DIR, PROJECT_SETTINGS_FILE);
 
+    // ユーザ設定を読み込み
+    let userSettings: UserSettings;
     try {
-      const content = await fs.readFile(settingsPath, 'utf-8');
-      const settings: ExportSettings = JSON.parse(content);
-
-      return NextResponse.json({
-        success: true,
-        data: settings
-      });
-    } catch (error) {
-      // ファイルが存在しない場合はデフォルト設定を返す
-      const defaultSettings: ExportSettings = {
-        outputPath: '.config_doc/index.html',
+      const content = await fs.readFile(userSettingsPath, 'utf-8');
+      userSettings = JSON.parse(content);
+    } catch {
+      // デフォルトのユーザ設定
+      userSettings = {
         format: 'html',
         autoExport: true
       };
-
-      return NextResponse.json({
-        success: true,
-        data: defaultSettings
-      });
     }
+
+    // プロジェクト設定を読み込み
+    let projectSettings: ProjectSettings;
+    try {
+      const content = await fs.readFile(projectSettingsPath, 'utf-8');
+      projectSettings = JSON.parse(content);
+    } catch {
+      // デフォルトのプロジェクト設定
+      projectSettings = {
+        fileName: 'config-doc'
+      };
+    }
+
+    // 統合された設定を返す
+    const settings: ExportSettings = {
+      ...userSettings,
+      ...projectSettings
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: settings
+    });
   } catch (error) {
     console.error('Failed to load export settings:', error);
     return NextResponse.json(
@@ -52,7 +68,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const settings: ExportSettings = body.settings;
 
-    if (!settings || !settings.outputPath || !settings.format) {
+    if (!settings || !settings.format) {
       return NextResponse.json(
         { success: false, error: 'Invalid settings' },
         { status: 400 }
@@ -61,17 +77,35 @@ export async function POST(request: NextRequest) {
 
     const rootPath = getRootPath();
     const configDocDir = path.join(rootPath, CONFIG_DOC_DIR);
-    const settingsPath = path.join(configDocDir, SETTINGS_FILE);
 
-    // .config_docディレクトリを確保
+    // .config_doc ディレクトリを確保
     await fs.mkdir(configDocDir, { recursive: true });
 
-    // 設定ファイルに保存
+    // ユーザ設定を保存（format, autoExport, lastExportedAt）
+    const userSettings: UserSettings = {
+      format: settings.format,
+      autoExport: settings.autoExport,
+      lastExportedAt: settings.lastExportedAt
+    };
+    const userSettingsPath = path.join(configDocDir, USER_SETTINGS_FILE);
     await fs.writeFile(
-      settingsPath,
-      JSON.stringify(settings, null, 2),
+      userSettingsPath,
+      JSON.stringify(userSettings, null, 2),
       'utf-8'
     );
+
+    // プロジェクト設定を保存（fileName）
+    if (settings.fileName !== undefined) {
+      const projectSettings: ProjectSettings = {
+        fileName: settings.fileName
+      };
+      const projectSettingsPath = path.join(configDocDir, PROJECT_SETTINGS_FILE);
+      await fs.writeFile(
+        projectSettingsPath,
+        JSON.stringify(projectSettings, null, 2),
+        'utf-8'
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -12,18 +12,24 @@ export class FileSystemService {
 
   async ensureConfigDocDir(): Promise<void> {
     const dirPath = path.join(this.rootPath, this.configDocDir);
+    const metadataDir = path.join(dirPath, 'metadata');
+    const docsDir = path.join(metadataDir, 'docs');
+
     try {
       await fs.access(dirPath);
     } catch {
       await fs.mkdir(dirPath, { recursive: true });
-      await fs.mkdir(path.join(dirPath, 'docs'), { recursive: true });
     }
+
+    // metadata/docsフォルダを作成
+    await fs.mkdir(docsDir, { recursive: true });
   }
 
   async loadConfigFiles(): Promise<ProjectConfigFiles | null> {
     const configFilesPath = path.join(
       this.rootPath,
       this.configDocDir,
+      'metadata',
       'config_files.json'
     );
     try {
@@ -41,6 +47,7 @@ export class FileSystemService {
     const metadataPath = path.join(
       this.rootPath,
       this.configDocDir,
+      'metadata',
       'config_files.json'
     );
     await fs.writeFile(
@@ -62,6 +69,7 @@ export class FileSystemService {
     const docsPath = path.join(
       this.rootPath,
       this.configDocDir,
+      'metadata',
       'docs',
       docsFileName
     );
@@ -83,6 +91,7 @@ export class FileSystemService {
     const docsPath = path.join(
       this.rootPath,
       this.configDocDir,
+      'metadata',
       'docs',
       docsFileName
     );
@@ -126,16 +135,11 @@ export class FileSystemService {
       });
   }
 
-  async saveHtmlExport(html: string): Promise<void> {
-    await this.ensureConfigDocDir();
-    const htmlPath = path.join(this.rootPath, this.configDocDir, 'index.html');
-    await fs.writeFile(htmlPath, html, 'utf-8');
-  }
-
   async deleteConfigDocs(docsFileName: string): Promise<void> {
     const docsPath = path.join(
       this.rootPath,
       this.configDocDir,
+      'metadata',
       'docs',
       docsFileName
     );

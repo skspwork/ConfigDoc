@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FileSystemService } from '@/lib/fileSystem';
 import { StorageService } from '@/lib/storage';
-import { HtmlGenerator } from '@/lib/htmlGenerator';
 import { getRootPath } from '@/lib/getRootPath';
 
 export async function POST(request: NextRequest) {
@@ -36,16 +35,6 @@ export async function POST(request: NextRequest) {
     if (metadata) {
       metadata.lastModified = new Date().toISOString();
       await fsService.saveConfigFiles(metadata);
-    }
-
-    // HTMLを自動生成
-    try {
-      const htmlGenerator = new HtmlGenerator(rootPath);
-      const html = await htmlGenerator.generateHtml();
-      await fsService.saveHtmlExport(html);
-    } catch (htmlError) {
-      console.error('HTML generation failed:', htmlError);
-      // HTML生成エラーは警告のみ（ドキュメント保存は成功）
     }
 
     return NextResponse.json({

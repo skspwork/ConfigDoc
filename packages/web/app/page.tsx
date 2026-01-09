@@ -309,11 +309,12 @@ export default function Home() {
     if (!exportSettings) return;
 
     try {
-      const response = await fetch('/api/export/html', {
+      const response = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          outputPath: exportSettings.outputPath
+          format: exportSettings.format,
+          fileName: exportSettings.fileName
         })
       });
 
@@ -339,11 +340,12 @@ export default function Home() {
 
   const handleExport = async (settings: ExportSettings) => {
     try {
-      const response = await fetch('/api/export/html', {
+      const response = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          outputPath: settings.outputPath
+          format: settings.format,
+          fileName: settings.fileName
         })
       });
 
@@ -363,7 +365,7 @@ export default function Home() {
           body: JSON.stringify({ settings: updatedSettings })
         });
 
-        showToast(`エクスポートしました: ${result.outputPath || settings.outputPath}`);
+        showToast(`エクスポートしました: ${result.outputPath}`);
       } else {
         showToast('エクスポートに失敗しました: ' + result.error, 'error');
       }

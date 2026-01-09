@@ -44,11 +44,19 @@ export interface FileSystemItem {
   extension?: string;
 }
 
-export type ExportFormat = 'html';
+export type ExportFormat = 'html' | 'markdown';
 
-export interface ExportSettings {
-  outputPath: string;              // 出力先パス（相対パスまたは絶対パス）
+// チーム共有設定（settings.json）
+export interface ProjectSettings {
+  fileName?: string;               // 出力ファイル名（拡張子なし、デフォルト: config-doc）
+}
+
+// ユーザ個別設定（.user.local.json）
+export interface UserSettings {
   format: ExportFormat;            // 出力形式
   autoExport: boolean;             // 保存時に自動エクスポート
   lastExportedAt?: string;         // 最後にエクスポートした日時
 }
+
+// 統合された設定（レスポンス用）
+export interface ExportSettings extends UserSettings, ProjectSettings {}
