@@ -66,38 +66,45 @@ export function ConfigTree({
       <div key={node.fullPath}>
         <div
           style={{ paddingLeft: `${depth * 20}px` }}
-          className={`flex items-center gap-2 py-1 px-2 cursor-pointer hover:bg-gray-100 ${
-            isSelected ? 'bg-blue-100' : ''
+          className={`group flex items-center gap-2 py-2 px-3 cursor-pointer rounded-lg transition-all duration-150 ${
+            isSelected
+              ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-l-4 border-blue-500 shadow-sm'
+              : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
           }`}
         >
           {node.children && node.children.length > 0 ? (
             <button
               onClick={() => toggleNode(node.fullPath)}
-              className="p-0.5 hover:bg-gray-200 rounded"
+              className="p-1 hover:bg-blue-100 rounded-md transition-colors"
             >
               {isExpanded ? (
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronDownIcon className="w-4 h-4 text-blue-600" />
               ) : (
-                <ChevronRightIcon className="w-4 h-4" />
+                <ChevronRightIcon className="w-4 h-4 text-gray-600" />
               )}
             </button>
           ) : (
-            <div className="w-5" />
+            <div className="w-6" />
           )}
 
           <div
             onClick={() => onSelectProperty(node.fullPath)}
             className="flex-1 flex items-center gap-2"
           >
-            <span className={node.children ? 'font-semibold' : ''}>
+            <span className={`${node.children ? 'font-bold text-gray-800' : 'font-medium text-gray-700'}`}>
               {node.key}
             </span>
             {!node.children && (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 truncate max-w-[200px]">
                 : {JSON.stringify(node.value)}
               </span>
             )}
-            {hasDoc && <FileTextIcon className="w-4 h-4 text-green-500" />}
+            {hasDoc && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 border border-green-300 rounded-full">
+                <FileTextIcon className="w-3 h-3 text-green-600" />
+                <span className="text-xs text-green-700 font-medium">Doc</span>
+              </div>
+            )}
           </div>
 
           {!node.children && (
@@ -124,25 +131,25 @@ export function ConfigTree({
   const tree = ConfigParser.buildTree(config);
 
   return (
-    <div className="h-full flex flex-col border rounded-lg bg-white">
+    <div className="h-full flex flex-col border-2 border-gray-100 rounded-xl bg-white shadow-sm">
       {/* ツールバー */}
-      <div className="flex items-center gap-2 p-2 border-b bg-gray-50">
+      <div className="flex items-center gap-2 p-3 border-b-2 border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
         <button
           onClick={expandAll}
-          className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+          className="px-4 py-1.5 text-sm font-medium bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           すべて展開
         </button>
         <button
           onClick={collapseAll}
-          className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+          className="px-4 py-1.5 text-sm font-medium bg-white border-2 border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           すべて閉じる
         </button>
       </div>
 
       {/* ツリー表示 */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-3">
         {tree.map((node) => renderNode(node))}
       </div>
     </div>

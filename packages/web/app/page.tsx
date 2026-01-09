@@ -6,7 +6,7 @@ import { ConfigTree } from '@/components/ConfigTree';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ExportDialog } from '@/components/ExportDialog';
 import { ToastContainer, ToastType } from '@/components/Toast';
-import { FolderOpenIcon, XIcon, SaveIcon, DownloadIcon } from 'lucide-react';
+import { FolderOpenIcon, XIcon, SaveIcon, DownloadIcon, FileTextIcon } from 'lucide-react';
 
 interface LoadedConfig {
   filePath: string;
@@ -398,41 +398,54 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* ヘッダー */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">
-            ConfigDoc Web
-          </h1>
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+              <FileTextIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ConfigDoc
+              </h1>
+              <p className="text-xs text-gray-500">Configuration Documentation Tool</p>
+            </div>
+          </div>
           <button
             onClick={() => setIsExportDialogOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            title="HTMLエクスポート"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            title="エクスポート"
           >
             <DownloadIcon className="w-5 h-5" />
-            エクスポート
+            <span className="font-medium">エクスポート</span>
           </button>
         </div>
       </header>
 
       {/* メインコンテンツ */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-6 py-8">
         {/* ファイル選択セクション */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">設定ファイル</h2>
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 mb-8 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <FolderOpenIcon className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800">設定ファイル</h2>
+            </div>
             <button
               onClick={() => setIsFileBrowserOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
             >
               <FolderOpenIcon className="w-5 h-5" />
-              ファイルを追加
+              <span className="font-medium">ファイルを追加</span>
             </button>
           </div>
 
           {loadedConfigs.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {loadedConfigs.map((config, index) => (
                 <div
                   key={config.filePath}
@@ -442,19 +455,23 @@ export default function Home() {
                     setEditingDoc(null);
                     setHasUnsavedChanges(false);
                   }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer ${
+                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     activeConfigIndex === index
-                      ? 'bg-blue-100 border-blue-500'
-                      : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-400 shadow-md'
+                      : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
                   }`}
                 >
-                  <span className="text-sm">{config.filePath.split(/[/\\]/).pop()}</span>
+                  <span className={`text-sm font-medium ${
+                    activeConfigIndex === index ? 'text-blue-700' : 'text-gray-700'
+                  }`}>
+                    {config.filePath.split(/[/\\]/).pop()}
+                  </span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveConfig(index);
                     }}
-                    className="text-gray-500 hover:text-red-500"
+                    className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <XIcon className="w-4 h-4" />
                   </button>
@@ -462,8 +479,10 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-sm text-gray-500">
-              設定ファイルを選択してください
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+              <FolderOpenIcon className="w-16 h-16 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-600 font-medium">設定ファイルを選択してください</p>
+              <p className="text-xs text-gray-500 mt-1">「ファイルを追加」ボタンから開始</p>
             </div>
           )}
         </div>
@@ -472,8 +491,13 @@ export default function Home() {
         {activeConfig && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左パネル: JSON構造ツリー */}
-            <div className="bg-white rounded-lg shadow p-4 flex flex-col max-h-[calc(100vh-250px)]">
-              <h2 className="text-lg font-semibold mb-3">JSON構造</h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-350px)] hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <FileTextIcon className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">JSON構造</h2>
+              </div>
               <div className="overflow-y-auto flex-1">
                 <ConfigTree
                   config={activeConfig.configData}
@@ -486,36 +510,41 @@ export default function Home() {
             </div>
 
             {/* 右パネル: プロパティ詳細（直接編集） */}
-            <div className="bg-white rounded-lg shadow p-4 flex flex-col max-h-[calc(100vh-250px)]">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold">プロパティ詳細</h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-250px)] hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <SaveIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
+                </div>
                 {hasUnsavedChanges && (
                   <button
                     onClick={handleSaveProperty}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                   >
                     <SaveIcon className="w-4 h-4" />
-                    保存
+                    <span className="font-medium">保存</span>
                   </button>
                 )}
               </div>
 
               <div className="overflow-y-auto flex-1">
                 {selectedPath && editingDoc ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* パス */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       パス
                     </label>
-                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded font-mono">
+                    <div className="text-sm text-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg font-mono border border-blue-200 shadow-sm">
                       {selectedPath}
                     </div>
                   </div>
 
                   {/* 説明 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       説明
                     </label>
                     <textarea
@@ -525,14 +554,14 @@ export default function Home() {
                         setEditingDoc(updated);
                         setHasUnsavedChanges(checkForChanges(updated, originalDoc));
                       }}
-                      className="w-full border rounded p-2 min-h-[100px] text-sm"
+                      className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[120px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
                       placeholder="このプロパティの説明を入力してください"
                     />
                   </div>
 
                   {/* 備考 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
                       備考
                     </label>
                     <textarea
@@ -542,14 +571,18 @@ export default function Home() {
                         setEditingDoc(updated);
                         setHasUnsavedChanges(checkForChanges(updated, originalDoc));
                       }}
-                      className="w-full border rounded p-2 min-h-[80px] text-sm"
+                      className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[100px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
                       placeholder="追加のメモや注意事項"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 text-center py-12">
-                  プロパティを選択してください
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <FileTextIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium">プロパティを選択してください</p>
+                  <p className="text-xs text-gray-500 mt-1">左側のツリーから項目を選択</p>
                 </div>
               )}
               </div>
