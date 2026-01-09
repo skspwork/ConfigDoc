@@ -50,7 +50,6 @@ export class MarkdownGenerator {
           markdown += `**備考:**\n\n${doc.notes}\n\n`;
         }
 
-        markdown += `*最終更新: ${new Date(doc.modifiedAt).toLocaleString('ja-JP')} by ${doc.modifiedBy}*\n\n`;
         markdown += '---\n\n';
       }
     }

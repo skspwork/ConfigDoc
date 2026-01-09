@@ -25,7 +25,6 @@ export interface PropertyDoc {
   description: string;
   notes: string;
   modifiedAt: string;
-  modifiedBy: string;
 }
 
 export interface ConfigTreeNode {

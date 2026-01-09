@@ -241,8 +241,7 @@ export default function Home() {
         path,
         description: '',
         notes: '',
-        modifiedAt: new Date().toISOString(),
-        modifiedBy: 'user'
+        modifiedAt: new Date().toISOString()
       };
       setEditingDoc(newDoc);
       setOriginalDoc(newDoc);
@@ -256,8 +255,7 @@ export default function Home() {
     try {
       const propertyDoc = {
         ...editingDoc,
-        modifiedAt: new Date().toISOString(),
-        modifiedBy: 'user'
+        modifiedAt: new Date().toISOString()
       };
 
       const response = await fetch('/api/config/save', {
