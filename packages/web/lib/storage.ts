@@ -1,5 +1,6 @@
 import { FileSystemService } from './fileSystem';
 import { ConfigDocs, PropertyDoc } from '@/types';
+import path from 'path';
 
 export class StorageService {
   constructor(private fs: FileSystemService) {}
@@ -11,10 +12,13 @@ export class StorageService {
   ): Promise<void> {
     const docsFileName = this.getDocsFileName(configFilePath);
 
+    // 絶対パスを相対パスに変換
+    const relativeConfigPath = this.toRelativePath(configFilePath);
+
     let docs = await this.fs.loadConfigDocs(docsFileName);
     if (!docs) {
       docs = {
-        configFilePath,
+        configFilePath: relativeConfigPath,
         lastModified: new Date().toISOString(),
         properties: {}
       };
@@ -22,6 +26,7 @@ export class StorageService {
 
     docs.properties[propertyPath] = propertyDoc;
     docs.lastModified = new Date().toISOString();
+    docs.configFilePath = relativeConfigPath; // 常に相対パスを保存
 
     await this.fs.saveConfigDocs(docsFileName, docs);
   }
@@ -30,11 +35,22 @@ export class StorageService {
     const docsFileName = this.getDocsFileName(configFilePath);
     const docs = await this.fs.loadConfigDocs(docsFileName);
 
+    // 絶対パスを相対パスに変換
+    const relativeConfigPath = this.toRelativePath(configFilePath);
+
     return docs || {
-      configFilePath,
+      configFilePath: relativeConfigPath,
       lastModified: new Date().toISOString(),
       properties: {}
     };
+  }
+
+  private toRelativePath(filePath: string): string {
+    // 絶対パスの場合は相対パスに変換
+    if (path.isAbsolute(filePath)) {
+      return path.relative(this.fs['rootPath'], filePath);
+    }
+    return filePath;
   }
 
   private getDocsFileName(configFilePath: string): string {
