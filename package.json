@@ -1,6 +1,6 @@
 {
   "name": "@skspwork/config-doc",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Interactive documentation tool for JSON configuration files (appsettings.json)",
   "keywords": [
     "config",
@@ -30,12 +30,14 @@
   "files": [
     "packages/cli/bin",
     "packages/cli/package.json",
-    "packages/web/.next",
-    "packages/web/package.json",
-    "packages/web/package-lock.json",
-    "packages/web/node_modules",
-    "packages/web/next.config.ts",
+    "packages/web/app",
+    "packages/web/components", 
+    "packages/web/lib",
+    "packages/web/types",
     "packages/web/public",
+    "packages/web/package.json",
+    "packages/web/next.config.ts",
+    "packages/web/tsconfig.json",
     "LICENSE",
     "README.md"
   ],
