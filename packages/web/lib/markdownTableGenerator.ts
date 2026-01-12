@@ -13,24 +13,25 @@ export class MarkdownTableGenerator {
     const fsService = new FileSystemService(this.rootPath);
     const storageService = new StorageService(fsService);
 
-    // メタデータを読み込む
-    const configFiles = await fsService.loadConfigFiles();
-    if (!configFiles || configFiles.configFiles.length === 0) {
+    // プロジェクト設定を読み込む
+    const settings = await fsService.loadProjectSettings();
+    if (!settings || settings.configFiles.length === 0) {
       return '# 設定ファイルドキュメント\n\nドキュメント化された設定ファイルがありません。\n';
     }
 
     let markdown = '# 設定ファイルドキュメント\n\n';
-    markdown += `プロジェクト: **${configFiles.projectName}**\n\n`;
-    markdown += `最終更新: ${new Date(configFiles.lastModified).toLocaleString('ja-JP')}\n\n`;
+    markdown += `プロジェクト: **${settings.projectName}**\n\n`;
+    markdown += `最終更新: ${new Date().toLocaleString('ja-JP')}\n\n`;
     markdown += '---\n\n';
 
     // 各設定ファイルのドキュメントを生成
-    for (const configFile of configFiles.configFiles) {
-      const docs = await storageService.loadAllDocs(configFile.filePath);
-      const configData = await fsService.loadConfigFile(configFile.filePath);
+    for (const filePath of settings.configFiles) {
+      const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
+      const docs = await storageService.loadAllDocs(filePath);
+      const configData = await fsService.loadConfigFile(filePath);
 
-      markdown += `## ${configFile.fileName}\n\n`;
-      markdown += `**ファイルパス:** \`${configFile.filePath}\`\n\n`;
+      markdown += `## ${fileName}\n\n`;
+      markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
 
       const propertyEntries = Object.entries(docs.properties);
       if (propertyEntries.length === 0) {

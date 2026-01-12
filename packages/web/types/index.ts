@@ -45,12 +45,16 @@ export interface FileSystemItem {
 
 export type ExportFormat = 'html' | 'markdown' | 'markdown-table';
 
-// チーム共有設定（settings.json）
+// プロジェクト設定（project_settings.json）- チーム共有
 export interface ProjectSettings {
-  fileName?: string;               // 出力ファイル名（拡張子なし、デフォルト: config-doc）
+  projectName: string;
+  configFiles: string[];           // 設定ファイルの相対パス配列
+  export?: {
+    fileName?: string;             // 出力ファイル名（拡張子なし、デフォルト: config-doc）
+  };
 }
 
-// ユーザ個別設定（.user.local.json）
+// ユーザ個別設定（.user_settings.json）
 export interface UserSettings {
   format: ExportFormat;            // 出力形式
   autoExport: boolean;             // 保存時に自動エクスポート
@@ -58,4 +62,6 @@ export interface UserSettings {
 }
 
 // 統合された設定（レスポンス用）
-export interface ExportSettings extends UserSettings, ProjectSettings {}
+export interface ExportSettings extends UserSettings {
+  fileName?: string;               // ProjectSettings.export.fileName から取得
+}

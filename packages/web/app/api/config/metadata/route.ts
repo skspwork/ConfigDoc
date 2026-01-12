@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { FileSystemService } from '@/lib/fileSystem';
+import { StorageService } from '@/lib/storage';
 import { ProjectConfigFiles } from '@/types';
 import { getRootPath } from '@/lib/getRootPath';
 
@@ -8,8 +9,32 @@ export async function GET() {
   try {
     const rootPath = getRootPath();
     const fsService = new FileSystemService(rootPath);
+    const storageService = new StorageService(fsService);
 
-    const metadata = await fsService.loadConfigFiles();
+    // project_settings.jsonを読み込み
+    const settings = await fsService.loadProjectSettings();
+
+    if (!settings) {
+      return NextResponse.json({
+        success: true,
+        data: null
+      });
+    }
+
+    // UI用にConfigFileInfo形式に変換（互換性のため）
+    const configFiles = settings.configFiles.map((filePath, index) => ({
+      id: `config-${index + 1}`,
+      fileName: filePath.split(/[/\\]/).pop() || 'config.json',
+      filePath,
+      docsFileName: storageService.getDocsFileName(filePath)
+    }));
+
+    const metadata: ProjectConfigFiles = {
+      projectName: settings.projectName,
+      createdAt: '',  // 不要になったが互換性のため
+      lastModified: new Date().toISOString(),
+      configFiles
+    };
 
     return NextResponse.json({
       success: true,
@@ -41,50 +66,46 @@ export async function POST(request: NextRequest) {
 
     const rootPath = getRootPath();
     const fsService = new FileSystemService(rootPath);
+    const storageService = new StorageService(fsService);
 
-    // メタデータを作成または更新
-    const existingMetadata = await fsService.loadConfigFiles();
+    // 既存の設定を読み込み
+    const existingSettings = await fsService.loadProjectSettings();
 
-    // 削除された設定ファイルの docs.json を削除
+    // 削除されたファイルのdocsを削除
     const deletedDocsFileNames: string[] = [];
-    if (existingMetadata && existingMetadata.configFiles) {
-      const newFilePaths = new Set(configFilePaths);
-      for (const oldConfig of existingMetadata.configFiles) {
-        if (!newFilePaths.has(oldConfig.filePath)) {
-          // この設定ファイルは削除された
-          deletedDocsFileNames.push(oldConfig.docsFileName);
-          await fsService.deleteConfigDocs(oldConfig.docsFileName);
+    if (existingSettings && existingSettings.configFiles) {
+      const newPaths = new Set(
+        configFilePaths.map((p: string) =>
+          path.isAbsolute(p) ? path.relative(rootPath, p) : p
+        )
+      );
+
+      for (const oldPath of existingSettings.configFiles) {
+        if (!newPaths.has(oldPath)) {
+          const docsFileName = storageService.getDocsFileName(oldPath);
+          deletedDocsFileNames.push(docsFileName);
+          await fsService.deleteConfigDocs(docsFileName);
         }
       }
     }
 
-    const metadata: ProjectConfigFiles = {
-      projectName: existingMetadata?.projectName || path.basename(rootPath),
-      createdAt: existingMetadata?.createdAt || new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      configFiles: configFilePaths.map((filePath, index) => {
-        const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
-        const docsFileName = fileName.replace('.json', '.docs.json');
+    // 絶対パスを相対パスに変換
+    const relativePaths = configFilePaths.map((p: string) =>
+      path.isAbsolute(p) ? path.relative(rootPath, p) : p
+    );
 
-        // 絶対パスの場合は相対パスに変換
-        const relativePath = path.isAbsolute(filePath)
-          ? path.relative(rootPath, filePath)
-          : filePath;
-
-        return {
-          id: `config-${index + 1}`,
-          fileName,
-          filePath: relativePath,
-          docsFileName
-        };
-      })
+    // 新しい設定を保存
+    const newSettings = {
+      projectName: existingSettings?.projectName || path.basename(rootPath),
+      configFiles: relativePaths,
+      export: existingSettings?.export || {}
     };
 
-    await fsService.saveConfigFiles(metadata);
+    await fsService.saveProjectSettings(newSettings);
 
     return NextResponse.json({
       success: true,
-      message: 'メタデータを保存しました',
+      message: 'プロジェクト設定を保存しました',
       deletedDocsFiles: deletedDocsFileNames
     });
   } catch (error) {

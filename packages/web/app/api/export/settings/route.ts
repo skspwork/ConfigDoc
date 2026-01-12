@@ -3,17 +3,17 @@ import { getRootPath } from '@/lib/getRootPath';
 import path from 'path';
 import fs from 'fs/promises';
 import { ExportSettings, UserSettings, ProjectSettings } from '@/types';
+import { FileSystemService } from '@/lib/fileSystem';
 
-const USER_SETTINGS_FILE = '.user.local.json';
-const PROJECT_SETTINGS_FILE = 'settings.json';
+const USER_SETTINGS_FILE = '.user_settings.json';
 const CONFIG_DOC_DIR = '.config_doc';
 
 // GET: エクスポート設定を読み込み
 export async function GET() {
   try {
     const rootPath = getRootPath();
+    const fsService = new FileSystemService(rootPath);
     const userSettingsPath = path.join(rootPath, CONFIG_DOC_DIR, USER_SETTINGS_FILE);
-    const projectSettingsPath = path.join(rootPath, CONFIG_DOC_DIR, PROJECT_SETTINGS_FILE);
 
     // ユーザ設定を読み込み
     let userSettings: UserSettings;
@@ -28,22 +28,14 @@ export async function GET() {
       };
     }
 
-    // プロジェクト設定を読み込み
-    let projectSettings: ProjectSettings;
-    try {
-      const content = await fs.readFile(projectSettingsPath, 'utf-8');
-      projectSettings = JSON.parse(content);
-    } catch {
-      // デフォルトのプロジェクト設定
-      projectSettings = {
-        fileName: 'config-doc'
-      };
-    }
+    // プロジェクト設定から export.fileName を取得
+    const projectSettings = await fsService.loadProjectSettings();
+    const fileName = projectSettings?.export?.fileName || 'config-doc';
 
     // 統合された設定を返す
     const settings: ExportSettings = {
       ...userSettings,
-      ...projectSettings
+      fileName
     };
 
     return NextResponse.json({
@@ -76,6 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const rootPath = getRootPath();
+    const fsService = new FileSystemService(rootPath);
     const configDocDir = path.join(rootPath, CONFIG_DOC_DIR);
 
     // .config_doc ディレクトリを確保
@@ -94,17 +87,28 @@ export async function POST(request: NextRequest) {
       'utf-8'
     );
 
-    // プロジェクト設定を保存（fileName）
+    // プロジェクト設定の export.fileName を更新
     if (settings.fileName !== undefined) {
-      const projectSettings: ProjectSettings = {
-        fileName: settings.fileName
-      };
-      const projectSettingsPath = path.join(configDocDir, PROJECT_SETTINGS_FILE);
-      await fs.writeFile(
-        projectSettingsPath,
-        JSON.stringify(projectSettings, null, 2),
-        'utf-8'
-      );
+      const existingProjectSettings = await fsService.loadProjectSettings();
+
+      if (existingProjectSettings) {
+        // 既存の設定を更新
+        existingProjectSettings.export = {
+          ...existingProjectSettings.export,
+          fileName: settings.fileName
+        };
+        await fsService.saveProjectSettings(existingProjectSettings);
+      } else {
+        // 新規作成
+        const newProjectSettings: ProjectSettings = {
+          projectName: path.basename(rootPath),
+          configFiles: [],
+          export: {
+            fileName: settings.fileName
+          }
+        };
+        await fsService.saveProjectSettings(newProjectSettings);
+      }
     }
 
     return NextResponse.json({

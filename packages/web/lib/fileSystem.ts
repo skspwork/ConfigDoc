@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ProjectConfigFiles, ConfigDocs, FileSystemItem } from '@/types';
+import { ProjectConfigFiles, ConfigDocs, FileSystemItem, ProjectSettings } from '@/types';
 
 export class FileSystemService {
   private configDocDir = '.config_doc';
@@ -25,6 +25,37 @@ export class FileSystemService {
     await fs.mkdir(docsDir, { recursive: true });
   }
 
+  // 新しいプロジェクト設定の読み込み
+  async loadProjectSettings(): Promise<ProjectSettings | null> {
+    const settingsPath = path.join(
+      this.rootPath,
+      this.configDocDir,
+      'project_settings.json'
+    );
+    try {
+      const content = await fs.readFile(settingsPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }
+
+  // 新しいプロジェクト設定の保存
+  async saveProjectSettings(settings: ProjectSettings): Promise<void> {
+    await this.ensureConfigDocDir();
+    const settingsPath = path.join(
+      this.rootPath,
+      this.configDocDir,
+      'project_settings.json'
+    );
+    await fs.writeFile(
+      settingsPath,
+      JSON.stringify(settings, null, 2),
+      'utf-8'
+    );
+  }
+
+  // 旧形式のconfig_files.jsonの読み込み（マイグレーション用）
   async loadConfigFiles(): Promise<ProjectConfigFiles | null> {
     const configFilesPath = path.join(
       this.rootPath,

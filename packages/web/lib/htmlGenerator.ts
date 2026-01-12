@@ -1,4 +1,5 @@
 import { FileSystemService } from './fileSystem';
+import { StorageService } from './storage';
 import { ProjectConfigFiles, ConfigDocs } from '@/types';
 
 interface ConfigWithDocs {
@@ -10,39 +11,52 @@ interface ConfigWithDocs {
 
 export class HtmlGenerator {
   private fsService: FileSystemService;
+  private storageService: StorageService;
 
   constructor(rootPath: string) {
     this.fsService = new FileSystemService(rootPath);
+    this.storageService = new StorageService(this.fsService);
   }
 
   async generateHtml(): Promise<string> {
-    // メタデータを読み込む
-    const metadata = await this.fsService.loadConfigFiles();
-    if (!metadata || !metadata.configFiles || metadata.configFiles.length === 0) {
+    // プロジェクト設定を読み込む
+    const settings = await this.fsService.loadProjectSettings();
+    if (!settings || !settings.configFiles || settings.configFiles.length === 0) {
       return this.generateEmptyHtml();
     }
 
     // 各設定ファイルとそのドキュメントを読み込む
     const configs: ConfigWithDocs[] = [];
-    for (const configFile of metadata.configFiles) {
+    for (const filePath of settings.configFiles) {
       try {
-        const configData = await this.fsService.loadConfigFile(configFile.filePath);
-        const docs = await this.fsService.loadConfigDocs(configFile.docsFileName);
+        const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
+        const docsFileName = this.storageService.getDocsFileName(filePath);
+
+        const configData = await this.fsService.loadConfigFile(filePath);
+        const docs = await this.fsService.loadConfigDocs(docsFileName);
 
         configs.push({
-          filePath: configFile.filePath,
-          fileName: configFile.fileName,
+          filePath,
+          fileName,
           configData,
           docs: docs || {
-            configFilePath: configFile.filePath,
+            configFilePath: filePath,
             lastModified: new Date().toISOString(),
             properties: {}
           }
         });
       } catch (error) {
-        console.error(`Failed to load config: ${configFile.filePath}`, error);
+        console.error(`Failed to load config: ${filePath}`, error);
       }
     }
+
+    // 互換性のため ProjectConfigFiles 形式に変換
+    const metadata: ProjectConfigFiles = {
+      projectName: settings.projectName,
+      createdAt: '',
+      lastModified: new Date().toISOString(),
+      configFiles: []
+    };
 
     return this.generateFullHtml(metadata, configs);
   }

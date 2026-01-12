@@ -45,29 +45,35 @@ export class StorageService {
     };
   }
 
+  // 公開メソッド: docsファイル名を取得
+  public getDocsFileName(configFilePath: string): string {
+    // 相対パスに変換してから処理
+    const relativePath = this.toRelativePath(configFilePath);
+
+    // パスの深さが1以下（ルート直下のファイル）の場合は、シンプルなファイル名
+    const pathParts = relativePath.split(/[/\\]/).filter(p => p && p !== '.');
+
+    if (pathParts.length <= 1) {
+      // ルート直下のファイル: components.json → components.docs.json
+      const fileName = pathParts[0] || 'config.json';
+      return fileName.replace('.json', '.docs.json');
+    } else {
+      // サブディレクトリのファイル: 相対パスを含めて一意にする
+      // 例: ../SimMoney/components.json → __SimMoney_components.docs.json
+      // 例: sample/appsettings.json → sample_appsettings.docs.json
+      const normalized = relativePath
+        .replace(/\.\./g, '__')  // .. を __ に変換
+        .replace(/[/\\]/g, '_')  // / と \ を _ に変換
+        .replace(/:/g, '');       // : を削除
+      return normalized.replace('.json', '.docs.json');
+    }
+  }
+
   private toRelativePath(filePath: string): string {
     // 絶対パスの場合は相対パスに変換
     if (path.isAbsolute(filePath)) {
       return path.relative(this.fs['rootPath'], filePath);
     }
     return filePath;
-  }
-
-  private getDocsFileName(configFilePath: string): string {
-    // 絶対パスの場合は、パス全体からハッシュを生成して一意にする
-    const isAbsolute = /^[a-zA-Z]:[/\\]/.test(configFilePath) || configFilePath.startsWith('/');
-
-    if (isAbsolute) {
-      // 絶対パスの場合：パスを正規化してBase64エンコード（ファイル名として安全な形式）
-      const normalized = configFilePath.replace(/[/\\]/g, '_').replace(/:/g, '');
-      const fileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
-      const baseName = fileName.replace('.json', '');
-      // ファイル名の前にパスのハッシュを追加して一意性を確保
-      return `${normalized.substring(0, 50)}_${baseName}.docs.json`;
-    } else {
-      // 相対パスの場合：従来通り
-      const fileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
-      return fileName.replace('.json', '.docs.json');
-    }
   }
 }
