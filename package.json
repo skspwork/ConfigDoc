@@ -1,6 +1,6 @@
 {
   "name": "@skspwork/config-doc",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Interactive documentation tool for JSON configuration files (appsettings.json)",
   "keywords": [
     "config",
@@ -31,7 +31,7 @@
     "packages/cli/bin",
     "packages/cli/package.json",
     "packages/web/app",
-    "packages/web/components", 
+    "packages/web/components",
     "packages/web/lib",
     "packages/web/types",
     "packages/web/public",
