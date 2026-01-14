@@ -44,7 +44,7 @@ export class MarkdownGenerator {
         markdown += `#### \`${propertyPath}\`\n\n`;
 
         if (doc.tags && doc.tags.length > 0) {
-          markdown += `**型情報:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
+          markdown += `**タグ:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
         }
 
         if (doc.description) {

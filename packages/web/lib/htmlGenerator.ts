@@ -543,7 +543,7 @@ export class HtmlGenerator {
       if (doc) {
         if (doc.tags && doc.tags.length > 0) {
           html += \`<div class="doc-section">
-            <h3>型情報</h3>
+            <h3>タグ</h3>
             <div class="tag-list">\`;
           doc.tags.forEach(tag => {
             html += \`<span class="tag">\${escapeHtml(tag)}</span>\`;

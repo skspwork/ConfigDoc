@@ -53,7 +53,7 @@ export function TagEditor({
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="block text-sm font-semibold text-gray-700">
-          型情報
+          タグ
         </label>
         <button
           onClick={() => setIsEditingAvailable(!isEditingAvailable)}

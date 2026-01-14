@@ -40,8 +40,8 @@ export class MarkdownTableGenerator {
       }
 
       // テーブルヘッダー
-      markdown += '| プロパティ名 | 型情報 | 説明 | 値 | 備考 |\n';
-      markdown += '|-------------|--------|------|-----|------|\n';
+      markdown += '| プロパティ名 | タグ | 説明 | 値 | 備考 |\n';
+      markdown += '|-------------|------|------|-----|------|\n';
 
       // 各プロパティの行を追加
       for (const [propertyPath, doc] of propertyEntries) {

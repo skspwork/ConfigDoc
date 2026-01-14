@@ -588,7 +588,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* 型情報 */}
+                  {/* タグ */}
                   <TagEditor
                     selectedTags={editingDoc.tags || []}
                     availableTags={availableTags}

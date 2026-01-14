@@ -24,7 +24,7 @@ export interface PropertyDoc {
   path: string;                    // "Database:ConnectionString"
   description: string;
   notes: string;
-  tags?: string[];                 // 型情報タグ（例: ["required", "string", "int", "bool"]）
+  tags?: string[];                 // タグ（例: ["required", "string", "int", "bool"]）
   modifiedAt: string;
 }
 
