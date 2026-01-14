@@ -548,7 +548,7 @@ export default function Home() {
         {activeConfig && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 左パネル: JSON構造ツリー */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-350px)] hover:shadow-2xl transition-shadow duration-300">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-190px)] hover:shadow-2xl transition-shadow duration-300">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <FileTextIcon className="w-5 h-5 text-white" />
@@ -567,7 +567,7 @@ export default function Home() {
             </div>
 
             {/* 右パネル: プロパティ詳細（直接編集） */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-250px)] hover:shadow-2xl transition-shadow duration-300">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-190px)] hover:shadow-2xl transition-shadow duration-300">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
                   <SaveIcon className="w-5 h-5 text-white" />
