@@ -64,6 +64,44 @@ export default function Home() {
 
   const activeConfig = loadedConfigs[activeConfigIndex];
 
+  // 同名ファイルを区別するための表示名を生成
+  const getDisplayName = (filePath: string, allFilePaths: string[]): string => {
+    const fileName = filePath.split(/[/\\]/).pop() || filePath;
+
+    // 同じファイル名を持つファイルパスを検索
+    const sameNamePaths = allFilePaths.filter(p => {
+      const name = p.split(/[/\\]/).pop();
+      return name === fileName;
+    });
+
+    // 同名のファイルが1つしかない場合はファイル名のみ
+    if (sameNamePaths.length === 1) {
+      return fileName;
+    }
+
+    // 同名ファイルが複数ある場合、親フォルダを追加
+    const pathParts = filePath.split(/[/\\]/);
+
+    // 必要な親フォルダのレベル数を決定
+    for (let depth = 1; depth < pathParts.length; depth++) {
+      const displayWithParents = pathParts.slice(-depth - 1).join('/');
+
+      // この表示名が他の同名ファイルと区別できるかチェック
+      const conflicts = sameNamePaths.filter(p => {
+        const otherParts = p.split(/[/\\]/);
+        const otherDisplay = otherParts.slice(-depth - 1).join('/');
+        return displayWithParents === otherDisplay && p !== filePath;
+      });
+
+      if (conflicts.length === 0) {
+        return displayWithParents;
+      }
+    }
+
+    // 全パスが必要な場合
+    return filePath;
+  };
+
   // 初期化時にメタデータから設定ファイルリストを読み込む
   useEffect(() => {
     const loadSavedConfigs = async () => {
@@ -464,7 +502,7 @@ export default function Home() {
                   <span className={`text-sm font-medium ${
                     activeConfigIndex === index ? 'text-blue-700' : 'text-gray-700'
                   }`}>
-                    {config.filePath.split(/[/\\]/).pop()}
+                    {getDisplayName(config.filePath, loadedConfigs.map(c => c.filePath))}
                   </span>
                   <button
                     onClick={(e) => {
