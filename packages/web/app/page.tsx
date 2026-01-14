@@ -39,7 +39,7 @@ export default function Home() {
   const [exportSettings, setExportSettings] = useState<ExportSettings | undefined>();
 
   // 利用可能なタグ
-  const [availableTags, setAvailableTags] = useState<string[]>(['required', 'string', 'int', 'bool']);
+  const [availableTags, setAvailableTags] = useState<string[]>(['required', 'nullable', 'string', 'number', 'boolean']);
 
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);

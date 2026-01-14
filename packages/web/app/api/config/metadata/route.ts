@@ -40,7 +40,7 @@ export async function GET() {
       success: true,
       data: {
         ...metadata,
-        availableTags: settings.availableTags || ['required', 'string', 'int', 'bool']
+        availableTags: settings.availableTags || ['required', 'nullable', 'string', 'number', 'boolean']
       }
     });
   } catch (error) {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const newSettings = {
       projectName: existingSettings?.projectName || path.basename(rootPath),
       configFiles: relativePaths,
-      availableTags: availableTags || existingSettings?.availableTags || ['required', 'string', 'int', 'bool'],
+      availableTags: availableTags || existingSettings?.availableTags || ['required', 'nullable', 'string', 'number', 'boolean'],
       export: existingSettings?.export || {}
     };
 
