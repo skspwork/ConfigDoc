@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileSystemItem } from '@/types';
-import { FolderIcon, FileIcon, ChevronUpIcon } from 'lucide-react';
+import { FolderIcon, FileIcon, ArrowUpIcon } from 'lucide-react';
 
 interface FileBrowserProps {
   isOpen: boolean;
@@ -153,7 +153,7 @@ export function FileBrowser({
             className="p-2 hover:bg-gray-200 rounded flex-shrink-0"
             title="上のディレクトリへ"
           >
-            <ChevronUpIcon className="w-5 h-5" />
+            <ArrowUpIcon className="w-5 h-5" />
           </button>
           <span className="text-sm text-gray-600 flex-1 truncate">パス: {path}</span>
         </div>
