@@ -148,14 +148,14 @@ export function FileBrowser({
 
         {/* パスとナビゲーション */}
         <div className="flex items-center gap-2 p-4 border-b bg-gray-50">
-          <span className="text-sm text-gray-600 flex-1">パス: {path}</span>
           <button
             onClick={handleGoUp}
-            className="p-2 hover:bg-gray-200 rounded"
+            className="p-2 hover:bg-gray-200 rounded flex-shrink-0"
             title="上のディレクトリへ"
           >
             <ChevronUpIcon className="w-5 h-5" />
           </button>
+          <span className="text-sm text-gray-600 flex-1 truncate">パス: {path}</span>
         </div>
 
         {/* ファイル一覧 */}
