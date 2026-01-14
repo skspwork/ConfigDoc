@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { ProjectConfigFiles, ConfigDocs, FileSystemItem, ProjectSettings } from '@/types';
+import { parseJSON } from './jsonUtils';
 
 export class FileSystemService {
   private configDocDir = '.config_doc';
@@ -34,7 +35,7 @@ export class FileSystemService {
     );
     try {
       const content = await fs.readFile(settingsPath, 'utf-8');
-      return JSON.parse(content);
+      return parseJSON(content);
     } catch {
       return null;
     }
@@ -65,7 +66,7 @@ export class FileSystemService {
     );
     try {
       const content = await fs.readFile(configFilesPath, 'utf-8');
-      return JSON.parse(content);
+      return parseJSON(content);
     } catch {
       return null;
     }
@@ -93,7 +94,7 @@ export class FileSystemService {
     const isAbsolute = path.isAbsolute(filePath);
     const fullPath = isAbsolute ? path.normalize(filePath) : path.join(this.rootPath, filePath);
     const content = await fs.readFile(fullPath, 'utf-8');
-    return JSON.parse(content);
+    return parseJSON(content);
   }
 
   async loadConfigDocs(docsFileName: string): Promise<ConfigDocs | null> {
@@ -106,7 +107,7 @@ export class FileSystemService {
     );
     try {
       const content = await fs.readFile(docsPath, 'utf-8');
-      return JSON.parse(content);
+      return parseJSON(content);
     } catch {
       return null;
     }

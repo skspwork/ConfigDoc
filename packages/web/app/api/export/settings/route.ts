@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { ExportSettings, UserSettings, ProjectSettings } from '@/types';
 import { FileSystemService } from '@/lib/fileSystem';
+import { parseJSON } from '@/lib/jsonUtils';
 
 const USER_SETTINGS_FILE = '.user_settings.json';
 const CONFIG_DOC_DIR = '.config_doc';
@@ -19,7 +20,7 @@ export async function GET() {
     let userSettings: UserSettings;
     try {
       const content = await fs.readFile(userSettingsPath, 'utf-8');
-      userSettings = JSON.parse(content);
+      userSettings = parseJSON<UserSettings>(content);
     } catch {
       // デフォルトのユーザ設定
       userSettings = {
