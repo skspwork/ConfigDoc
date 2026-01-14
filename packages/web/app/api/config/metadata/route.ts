@@ -38,7 +38,10 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: metadata
+      data: {
+        ...metadata,
+        availableTags: settings.availableTags || ['required', 'string', 'int', 'bool']
+      }
     });
   } catch (error) {
     console.error('API Error:', error);
@@ -55,7 +58,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { configFilePaths } = body;
+    const { configFilePaths, availableTags } = body;
 
     if (!Array.isArray(configFilePaths)) {
       return NextResponse.json(
@@ -98,6 +101,7 @@ export async function POST(request: NextRequest) {
     const newSettings = {
       projectName: existingSettings?.projectName || path.basename(rootPath),
       configFiles: relativePaths,
+      availableTags: availableTags || existingSettings?.availableTags || ['required', 'string', 'int', 'bool'],
       export: existingSettings?.export || {}
     };
 

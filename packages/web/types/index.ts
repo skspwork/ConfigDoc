@@ -24,6 +24,7 @@ export interface PropertyDoc {
   path: string;                    // "Database:ConnectionString"
   description: string;
   notes: string;
+  tags?: string[];                 // 型情報タグ（例: ["required", "string", "int", "bool"]）
   modifiedAt: string;
 }
 
@@ -49,6 +50,7 @@ export type ExportFormat = 'html' | 'markdown' | 'markdown-table';
 export interface ProjectSettings {
   projectName: string;
   configFiles: string[];           // 設定ファイルの相対パス配列
+  availableTags?: string[];        // 利用可能なタグ（デフォルト: ['required', 'string', 'int', 'bool']）
   export?: {
     fileName?: string;             // 出力ファイル名（拡張子なし、デフォルト: config-doc）
   };

@@ -5,6 +5,7 @@ import { ConfigDocs, PropertyDoc, ExportSettings } from '@/types';
 import { ConfigTree } from '@/components/ConfigTree';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ExportDialog } from '@/components/ExportDialog';
+import { TagEditor } from '@/components/TagEditor';
 import { ToastContainer, ToastType } from '@/components/Toast';
 import { FolderOpenIcon, XIcon, SaveIcon, DownloadIcon, FileTextIcon } from 'lucide-react';
 
@@ -37,6 +38,9 @@ export default function Home() {
   // エクスポート設定
   const [exportSettings, setExportSettings] = useState<ExportSettings | undefined>();
 
+  // 利用可能なタグ
+  const [availableTags, setAvailableTags] = useState<string[]>(['required', 'string', 'int', 'bool']);
+
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -58,6 +62,12 @@ export default function Home() {
 
     // 備考の比較
     if (current.notes !== original.notes) return true;
+
+    // タグの比較
+    const currentTags = current.tags || [];
+    const originalTags = original.tags || [];
+    if (currentTags.length !== originalTags.length) return true;
+    if (currentTags.some((tag, index) => tag !== originalTags[index])) return true;
 
     return false;
   };
@@ -123,6 +133,11 @@ export default function Home() {
               for (const configFile of metaResult.data.configFiles) {
                 await loadConfigFile(configFile.filePath);
               }
+            }
+
+            // 利用可能なタグを読み込む
+            if (metaResult.success && metaResult.data?.availableTags) {
+              setAvailableTags(metaResult.data.availableTags);
             }
           }
         }
@@ -294,7 +309,10 @@ export default function Home() {
     const existingDoc = activeConfig.docs.properties[path];
 
     if (existingDoc) {
-      const docCopy = { ...existingDoc };
+      const docCopy = {
+        ...existingDoc,
+        tags: existingDoc.tags || []
+      };
       setEditingDoc(docCopy);
       setOriginalDoc(docCopy);
     } else {
@@ -303,6 +321,7 @@ export default function Home() {
         path,
         description: '',
         notes: '',
+        tags: [],
         modifiedAt: new Date().toISOString()
       };
       setEditingDoc(newDoc);
@@ -568,6 +587,29 @@ export default function Home() {
                       {selectedPath}
                     </div>
                   </div>
+
+                  {/* 型情報 */}
+                  <TagEditor
+                    selectedTags={editingDoc.tags || []}
+                    availableTags={availableTags}
+                    onSelectedTagsChange={(tags) => {
+                      const updated = { ...editingDoc, tags };
+                      setEditingDoc(updated);
+                      setHasUnsavedChanges(checkForChanges(updated, originalDoc));
+                    }}
+                    onAvailableTagsChange={async (tags) => {
+                      setAvailableTags(tags);
+                      // プロジェクト設定を更新
+                      await fetch('/api/config/metadata', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          configFilePaths: loadedConfigs.map(c => c.filePath),
+                          availableTags: tags
+                        })
+                      });
+                    }}
+                  />
 
                   {/* 説明 */}
                   <div>

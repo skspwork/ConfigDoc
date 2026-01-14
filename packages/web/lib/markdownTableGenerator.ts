@@ -40,18 +40,21 @@ export class MarkdownTableGenerator {
       }
 
       // テーブルヘッダー
-      markdown += '| プロパティ名 | 説明 | 値 | 備考 |\n';
-      markdown += '|-------------|------|-----|------|\n';
+      markdown += '| プロパティ名 | 型情報 | 説明 | 値 | 備考 |\n';
+      markdown += '|-------------|--------|------|-----|------|\n';
 
       // 各プロパティの行を追加
       for (const [propertyPath, doc] of propertyEntries) {
         const propertyName = this.escapeTableCell(propertyPath);
+        const tags = doc.tags && doc.tags.length > 0
+          ? this.escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
+          : '-';
         const description = this.escapeTableCell(doc.description || '-');
         const value = this.getPropertyValue(configData, propertyPath);
         const valueStr = this.escapeTableCell(value);
         const notes = this.escapeTableCell(doc.notes || '-');
 
-        markdown += `| ${propertyName} | ${description} | ${valueStr} | ${notes} |\n`;
+        markdown += `| ${propertyName} | ${tags} | ${description} | ${valueStr} | ${notes} |\n`;
       }
 
       markdown += '\n';

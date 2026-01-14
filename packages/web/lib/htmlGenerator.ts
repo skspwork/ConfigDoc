@@ -411,6 +411,23 @@ export class HtmlGenerator {
       margin-top: 20px;
     }
 
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
     .hidden {
       display: none;
     }
@@ -524,6 +541,17 @@ export class HtmlGenerator {
       html += \`<div class="property-value">値: \${escapeHtml(JSON.stringify(node.value, null, 2))}</div>\`;
 
       if (doc) {
+        if (doc.tags && doc.tags.length > 0) {
+          html += \`<div class="doc-section">
+            <h3>型情報</h3>
+            <div class="tag-list">\`;
+          doc.tags.forEach(tag => {
+            html += \`<span class="tag">\${escapeHtml(tag)}</span>\`;
+          });
+          html += \`</div>
+          </div>\`;
+        }
+
         if (doc.description) {
           html += \`<div class="doc-section">
             <h3>説明</h3>

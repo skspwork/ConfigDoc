@@ -43,6 +43,10 @@ export class MarkdownGenerator {
       for (const [propertyPath, doc] of propertyEntries) {
         markdown += `#### \`${propertyPath}\`\n\n`;
 
+        if (doc.tags && doc.tags.length > 0) {
+          markdown += `**型情報:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
+        }
+
         if (doc.description) {
           markdown += `**説明:**\n\n${doc.description}\n\n`;
         }
