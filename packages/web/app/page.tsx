@@ -453,7 +453,7 @@ export default function Home() {
           </div>
           <button
             onClick={() => setIsExportDialogOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform"
             title="エクスポート"
           >
             <DownloadIcon className="w-5 h-5" />
@@ -475,7 +475,7 @@ export default function Home() {
             </div>
             <button
               onClick={() => setIsFileBrowserOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200 transform"
             >
               <FolderOpenIcon className="w-5 h-5" />
               <span className="font-medium">ファイルを追加</span>
@@ -549,22 +549,11 @@ export default function Home() {
 
             {/* 右パネル: プロパティ詳細（直接編集） */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-250px)] hover:shadow-2xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <SaveIcon className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <SaveIcon className="w-5 h-5 text-white" />
                 </div>
-                {hasUnsavedChanges && (
-                  <button
-                    onClick={handleSaveProperty}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                  >
-                    <SaveIcon className="w-4 h-4" />
-                    <span className="font-medium">保存</span>
-                  </button>
-                )}
+                <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
               </div>
 
               <div className="overflow-y-auto flex-1">
@@ -613,6 +602,19 @@ export default function Home() {
                       placeholder="追加のメモや注意事項"
                     />
                   </div>
+
+                  {/* 保存ボタン */}
+                  {hasUnsavedChanges && (
+                    <div className="pt-2">
+                      <button
+                        onClick={handleSaveProperty}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform"
+                      >
+                        <SaveIcon className="w-5 h-5" />
+                        <span className="font-medium">保存</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20">
