@@ -646,17 +646,20 @@ export default function Home() {
                   </div>
 
                   {/* 保存ボタン */}
-                  {hasUnsavedChanges && (
-                    <div className="pt-2">
-                      <button
-                        onClick={handleSaveProperty}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 transform"
-                      >
-                        <SaveIcon className="w-5 h-5" />
-                        <span className="font-medium">保存</span>
-                      </button>
-                    </div>
-                  )}
+                  <div className="pt-2">
+                    <button
+                      onClick={handleSaveProperty}
+                      disabled={!hasUnsavedChanges}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg shadow-md transition-all duration-200 transform ${
+                        hasUnsavedChanges
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-lg cursor-pointer'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <SaveIcon className="w-5 h-5" />
+                      <span className="font-medium">保存</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20">
