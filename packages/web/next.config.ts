@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'standalone',
+  generateBuildId: async () => {
+    return 'config-doc-build'
+  }
 };
 
 export default nextConfig;

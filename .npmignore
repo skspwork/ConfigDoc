@@ -1,0 +1,31 @@
+node_modules/
+.config_doc/
+*.tsbuildinfo
+out/
+.env
+.env.local
+
+# Exclude web source files (not needed at runtime with standalone)
+packages/web/node_modules/
+packages/web/app/
+packages/web/components/
+packages/web/lib/
+packages/web/types/
+
+# Exclude config files (not needed at runtime)
+packages/web/next.config.ts
+packages/web/tsconfig.json
+packages/web/eslint.config.mjs
+packages/web/postcss.config.mjs
+packages/web/tailwind.config.ts
+
+# Exclude .next build artifacts (but keep standalone and static)
+packages/web/.next/cache/
+packages/web/.next/trace
+packages/web/.next/server/
+packages/web/.next/types/
+packages/web/.next/BUILD_ID
+packages/web/.next/package.json
+
+# Exclude scripts directory
+scripts/

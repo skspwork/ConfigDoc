@@ -83,6 +83,8 @@ async function main() {
 
     // Next.jsアプリのパスを取得
     const webAppPath = path.join(__dirname, '..', '..', 'web');
+    const standaloneRoot = path.join(webAppPath, '.next', 'standalone', 'packages', 'web');
+    const standaloneServerPath = path.join(standaloneRoot, 'server.js');
 
     // 環境変数を設定
     const env = {
@@ -93,10 +95,10 @@ async function main() {
       NODE_ENV: 'production'
     };
 
-    // Next.jsサーバーを起動
+    // Next.jsサーバーを起動（standalone build使用）
     console.log('🔧 Starting web server...');
-    const nextProcess = spawn('node', [path.join(webAppPath, 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '-p', port.toString()], {
-      cwd: webAppPath,
+    const nextProcess = spawn('node', [standaloneServerPath], {
+      cwd: standaloneRoot,
       env: env,
       stdio: 'inherit'
     });
