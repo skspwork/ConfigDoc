@@ -597,14 +597,35 @@ export class HtmlGenerator {
       renderTree(tree, treeEl);
     }
 
-    // 検索フィルタを適用（ツリー項目のフィルタリング）
+    // 検索フィルタを適用（ツリー項目のフィルタリング - プロパティ名、パス、説明、備考を検索）
     function applySearchFilter(query) {
+      const config = configs[activeConfigIndex];
       const items = document.querySelectorAll('.tree-item');
+
       items.forEach(item => {
         const text = item.textContent.toLowerCase();
         const path = item.dataset.path.toLowerCase();
+        let matched = false;
 
+        // プロパティ名とパスで検索
         if (text.includes(query) || path.includes(query)) {
+          matched = true;
+        }
+
+        // ドキュメント（説明と備考）でも検索
+        if (!matched) {
+          const doc = config.docs.properties && config.docs.properties[item.dataset.path];
+          if (doc) {
+            const description = (doc.description || '').toLowerCase();
+            const notes = (doc.notes || '').toLowerCase();
+
+            if (description.includes(query) || notes.includes(query)) {
+              matched = true;
+            }
+          }
+        }
+
+        if (matched) {
           item.style.display = '';
           // 親要素も表示
           let parent = item.parentElement;
@@ -638,7 +659,7 @@ export class HtmlGenerator {
         let foundInConfigs = [];
         configs.forEach((config, index) => {
           const tree = buildTree(config.configData, '', config.docs);
-          const hasMatch = searchInTree(tree, query);
+          const hasMatch = searchInTreeForConfig(tree, query, config);
           if (hasMatch) {
             foundInConfigs.push(index);
           }
@@ -659,18 +680,30 @@ export class HtmlGenerator {
       });
     }
 
-    // ツリー内を検索してマッチするか判定
-    function searchInTree(nodes, query) {
+    // ツリー内を検索してマッチするか判定（特定の設定ファイル用）
+    function searchInTreeForConfig(nodes, query, config) {
       for (const node of nodes) {
         const text = node.key.toLowerCase();
         const path = node.path.toLowerCase();
 
+        // プロパティ名とパスで検索
         if (text.includes(query) || path.includes(query)) {
           return true;
         }
 
+        // ドキュメント（説明と備考）でも検索
+        const doc = config.docs.properties && config.docs.properties[node.path];
+        if (doc) {
+          const description = (doc.description || '').toLowerCase();
+          const notes = (doc.notes || '').toLowerCase();
+
+          if (description.includes(query) || notes.includes(query)) {
+            return true;
+          }
+        }
+
         if (node.children && node.children.length > 0) {
-          if (searchInTree(node.children, query)) {
+          if (searchInTreeForConfig(node.children, query, config)) {
             return true;
           }
         }
