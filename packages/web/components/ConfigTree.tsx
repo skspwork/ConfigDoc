@@ -57,8 +57,30 @@ export function ConfigTree({
     setExpandedNodes(new Set());
   };
 
+  // ドキュメントが有効な内容を持っているかチェック
+  const hasValidDocumentation = (path: string): boolean => {
+    const doc = docs.properties[path];
+    if (!doc) return false;
+
+    // 説明があるか
+    if (doc.description && doc.description.trim() !== '') return true;
+
+    // タグがあるか
+    if (doc.tags && doc.tags.length > 0) return true;
+
+    // カスタムフィールドに値があるか
+    if (doc.customFields) {
+      const hasCustomFieldValue = Object.values(doc.customFields).some(
+        value => value && value.trim() !== ''
+      );
+      if (hasCustomFieldValue) return true;
+    }
+
+    return false;
+  };
+
   const renderNode = (node: ConfigTreeNode, depth: number = 0) => {
-    const hasDoc = docs.properties[node.fullPath] !== undefined;
+    const hasDoc = hasValidDocumentation(node.fullPath);
     const isExpanded = expandedNodes.has(node.fullPath);
     const isSelected = selectedPath === node.fullPath;
 
