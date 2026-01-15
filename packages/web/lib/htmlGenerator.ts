@@ -559,11 +559,15 @@ export class HtmlGenerator {
           </div>\`;
         }
 
-        if (doc.notes) {
-          html += \`<div class="doc-section">
-            <h3>備考</h3>
-            <p>\${escapeHtml(doc.notes)}</p>
-          </div>\`;
+        if (doc.customFields && Object.keys(doc.customFields).length > 0) {
+          Object.entries(doc.customFields).forEach(([label, value]) => {
+            if (value) {
+              html += \`<div class="doc-section">
+                <h3>\${escapeHtml(label)}</h3>
+                <p>\${escapeHtml(value)}</p>
+              </div>\`;
+            }
+          });
         }
 
         if (doc.modifiedAt) {
@@ -645,9 +649,8 @@ export class HtmlGenerator {
           const doc = config.docs.properties && config.docs.properties[item.dataset.path];
           if (doc) {
             const description = (doc.description || '').toLowerCase();
-            const notes = (doc.notes || '').toLowerCase();
 
-            if (description.includes(query) || notes.includes(query)) {
+            if (description.includes(query)) {
               matched = true;
             }
           }
@@ -719,13 +722,12 @@ export class HtmlGenerator {
           return true;
         }
 
-        // ドキュメント（説明と備考）でも検索
+        // ドキュメント（説明）でも検索
         const doc = config.docs.properties && config.docs.properties[node.path];
         if (doc) {
           const description = (doc.description || '').toLowerCase();
-          const notes = (doc.notes || '').toLowerCase();
 
-          if (description.includes(query) || notes.includes(query)) {
+          if (description.includes(query)) {
             return true;
           }
         }

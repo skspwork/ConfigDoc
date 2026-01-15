@@ -31,6 +31,31 @@ export class StorageService {
     await this.fs.saveConfigDocs(docsFileName, docs);
   }
 
+  async updateAllProperties(
+    configFilePath: string,
+    properties: Record<string, PropertyDoc>
+  ): Promise<void> {
+    const docsFileName = this.getDocsFileName(configFilePath);
+
+    // 絶対パスを相対パスに変換
+    const relativeConfigPath = this.toRelativePath(configFilePath);
+
+    let docs = await this.fs.loadConfigDocs(docsFileName);
+    if (!docs) {
+      docs = {
+        configFilePath: relativeConfigPath,
+        lastModified: new Date().toISOString(),
+        properties: {}
+      };
+    }
+
+    docs.properties = properties;
+    docs.lastModified = new Date().toISOString();
+    docs.configFilePath = relativeConfigPath;
+
+    await this.fs.saveConfigDocs(docsFileName, docs);
+  }
+
   async loadAllDocs(configFilePath: string): Promise<ConfigDocs> {
     const docsFileName = this.getDocsFileName(configFilePath);
     const docs = await this.fs.loadConfigDocs(docsFileName);

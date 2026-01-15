@@ -6,11 +6,12 @@ import { getRootPath } from '@/lib/getRootPath';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { configFilePath, propertyPath, propertyDoc } = body;
+    const { configFilePath, propertyPath, propertyDoc, properties } = body;
 
-    if (!configFilePath || !propertyPath || !propertyDoc) {
+    // configFilePathは必須
+    if (!configFilePath) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Missing configFilePath' },
         { status: 400 }
       );
     }
@@ -23,12 +24,22 @@ export async function POST(request: NextRequest) {
     // .config_docディレクトリを確保
     await fsService.ensureConfigDocDir();
 
-    // ドキュメントを保存
-    await storageService.savePropertyDoc(
-      configFilePath,
-      propertyPath,
-      propertyDoc
-    );
+    // 一括更新モード（propertiesが指定されている場合）
+    if (properties) {
+      await storageService.updateAllProperties(configFilePath, properties);
+    } else if (propertyPath && propertyDoc) {
+      // 単一プロパティ更新モード
+      await storageService.savePropertyDoc(
+        configFilePath,
+        propertyPath,
+        propertyDoc
+      );
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: either (propertyPath, propertyDoc) or properties required' },
+        { status: 400 }
+      );
+    }
 
     // メタデータの最終更新時刻を更新
     const metadata = await fsService.loadConfigFiles();

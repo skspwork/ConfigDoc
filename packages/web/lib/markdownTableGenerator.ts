@@ -39,9 +39,27 @@ export class MarkdownTableGenerator {
         continue;
       }
 
+      // すべてのカスタムフィールドラベルを収集
+      const customFieldLabels = new Set<string>();
+      propertyEntries.forEach(([_, doc]) => {
+        if (doc.customFields) {
+          Object.keys(doc.customFields).forEach(label => customFieldLabels.add(label));
+        }
+      });
+      const sortedLabels = Array.from(customFieldLabels).sort();
+
       // テーブルヘッダー
-      markdown += '| プロパティ名 | タグ | 説明 | 値 | 備考 |\n';
-      markdown += '|-------------|------|------|-----|------|\n';
+      markdown += '| プロパティ名 | タグ | 説明 | 値 |';
+      sortedLabels.forEach(label => {
+        markdown += ` ${label} |`;
+      });
+      markdown += '\n';
+
+      markdown += '|-------------|------|------|-----|';
+      sortedLabels.forEach(() => {
+        markdown += '------|';
+      });
+      markdown += '\n';
 
       // 各プロパティの行を追加
       for (const [propertyPath, doc] of propertyEntries) {
@@ -52,9 +70,16 @@ export class MarkdownTableGenerator {
         const description = this.escapeTableCell(doc.description || '-');
         const value = this.getPropertyValue(configData, propertyPath);
         const valueStr = this.escapeTableCell(value);
-        const notes = this.escapeTableCell(doc.notes || '-');
 
-        markdown += `| ${propertyName} | ${tags} | ${description} | ${valueStr} | ${notes} |\n`;
+        markdown += `| ${propertyName} | ${tags} | ${description} | ${valueStr} |`;
+
+        // カスタムフィールドの値を追加
+        sortedLabels.forEach(label => {
+          const fieldValue = doc.customFields?.[label] || '-';
+          markdown += ` ${this.escapeTableCell(fieldValue)} |`;
+        });
+
+        markdown += '\n';
       }
 
       markdown += '\n';

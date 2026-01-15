@@ -51,8 +51,12 @@ export class MarkdownGenerator {
           markdown += `**説明:**\n\n${doc.description}\n\n`;
         }
 
-        if (doc.notes) {
-          markdown += `**備考:**\n\n${doc.notes}\n\n`;
+        if (doc.customFields && Object.keys(doc.customFields).length > 0) {
+          Object.entries(doc.customFields).forEach(([label, value]) => {
+            if (value) {
+              markdown += `**${label}:**\n\n${value}\n\n`;
+            }
+          });
         }
 
         markdown += '---\n\n';
