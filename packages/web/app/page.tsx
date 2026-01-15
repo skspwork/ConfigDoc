@@ -622,6 +622,9 @@ export default function Home() {
                       setHasUnsavedChanges(checkForChanges(updated, originalDoc));
                     }}
                     onAvailableTagsChange={async (tags) => {
+                      // 削除されたタグを検出
+                      const removedTags = availableTags.filter(tag => !tags.includes(tag));
+
                       setAvailableTags(tags);
                       // プロジェクト設定を更新（configFilePathsは送らない）
                       await fetch('/api/config/metadata', {
@@ -631,6 +634,59 @@ export default function Home() {
                           availableTags: tags
                         })
                       });
+
+                      // 削除されたタグを全プロパティから削除
+                      if (removedTags.length > 0) {
+                        for (const config of loadedConfigs) {
+                          let hasChanges = false;
+                          const updatedProperties = { ...config.docs.properties };
+
+                          for (const [propPath, doc] of Object.entries(updatedProperties)) {
+                            if (doc.tags && doc.tags.length > 0) {
+                              const updatedTags = doc.tags.filter(tag => !removedTags.includes(tag));
+                              if (updatedTags.length !== doc.tags.length) {
+                                updatedProperties[propPath] = {
+                                  ...doc,
+                                  tags: updatedTags
+                                };
+                                hasChanges = true;
+                              }
+                            }
+                          }
+
+                          if (hasChanges) {
+                            // 更新されたドキュメントを保存
+                            await fetch('/api/config/save', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                configFilePath: config.filePath,
+                                properties: updatedProperties
+                              })
+                            });
+
+                            // ローカル状態を更新
+                            setLoadedConfigs(prev => prev.map(c =>
+                              c.filePath === config.filePath
+                                ? { ...c, docs: { ...c.docs, properties: updatedProperties } }
+                                : c
+                            ));
+                          }
+                        }
+
+                        // 現在編集中のドキュメントのタグも更新
+                        if (editingDoc && editingDoc.tags) {
+                          const updatedEditingTags = editingDoc.tags.filter(tag => !removedTags.includes(tag));
+                          if (updatedEditingTags.length !== editingDoc.tags.length) {
+                            const updated = { ...editingDoc, tags: updatedEditingTags };
+                            setEditingDoc(updated);
+                            if (originalDoc) {
+                              const updatedOriginalTags = (originalDoc.tags || []).filter(tag => !removedTags.includes(tag));
+                              setOriginalDoc({ ...originalDoc, tags: updatedOriginalTags });
+                            }
+                          }
+                        }
+                      }
                     }}
                   />
 
