@@ -599,11 +599,10 @@ export default function Home() {
                 <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
               </div>
 
-              <div className="overflow-y-auto flex-1">
                 {selectedPath && editingDoc ? (
-                <div className="space-y-6">
-                  {/* パス */}
-                  <div>
+                <div className="flex flex-col flex-1 min-h-0">
+                  {/* パス（上部固定） */}
+                  <div className="flex-shrink-0 pb-4 border-b border-gray-200">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       パス
                     </label>
@@ -612,6 +611,8 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* スクロール可能なフォーム部分 */}
+                  <div className="flex-1 overflow-y-auto py-4 space-y-6 min-h-0">
                   {/* タグ */}
                   <TagEditor
                     selectedTags={editingDoc.tags || []}
@@ -804,8 +805,10 @@ export default function Home() {
                     }}
                   />
 
-                  {/* 保存ボタン */}
-                  <div className="pt-2">
+                  </div>
+
+                  {/* 保存ボタン（下部固定） */}
+                  <div className="flex-shrink-0 pt-4 border-t border-gray-200">
                     <button
                       onClick={handleSaveProperty}
                       disabled={!hasUnsavedChanges}
@@ -821,7 +824,7 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20">
+                <div className="flex flex-col items-center justify-center flex-1">
                   <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
                     <FileTextIcon className="w-10 h-10 text-gray-400" />
                   </div>
@@ -829,7 +832,6 @@ export default function Home() {
                   <p className="text-xs text-gray-500 mt-1">左側のツリーから項目を選択</p>
                 </div>
               )}
-              </div>
             </div>
           </div>
         )}
