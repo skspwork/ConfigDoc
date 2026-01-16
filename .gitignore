@@ -46,6 +46,8 @@ packages/web/node_modules/
 packages/web/out/
 packages/web/*.tsbuildinfo
 packages/web/.turbo/
+packages/web/playwright-report/
+packages/web/test-results/
 
 # old structure (can be removed after migration)
 config-doc-web/
