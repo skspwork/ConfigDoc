@@ -67,7 +67,8 @@ test.describe('カスタムフィールド管理', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      const customFieldLabel = page.getByText('カスタムフィールド');
+      // exact: true で完全一致させ、「カスタムフィールドがありません」とのマッチを避ける
+      const customFieldLabel = page.getByText('カスタムフィールド', { exact: true });
       await expect(customFieldLabel).toBeVisible();
     }
   });

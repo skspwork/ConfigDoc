@@ -267,8 +267,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // カスタムフィールドラベル
-      const customFieldLabel = page.getByText('カスタムフィールド');
+      // カスタムフィールドラベル（exact: true で完全一致）
+      const customFieldLabel = page.getByText('カスタムフィールド', { exact: true });
       await expect(customFieldLabel).toBeVisible();
     }
   });
