@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="50%" style="stop-color:#6366F1"/>
+      <stop offset="100%" style="stop-color:#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="docGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60A5FA"/>
+      <stop offset="100%" style="stop-color:#A78BFA"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景の角丸四角 -->
+  <rect x="8" y="8" width="224" height="224" rx="44" fill="url(#bgGradient)"/>
+
+  <!-- ドキュメントアイコン（背面） -->
+  <path d="M68 48 L148 48 L172 72 L172 192 L68 192 Z" fill="white" opacity="0.2"/>
+  <path d="M148 48 L148 72 L172 72" fill="none" stroke="white" stroke-width="4" opacity="0.2"/>
+
+  <!-- ドキュメントアイコン（前面） -->
+  <path d="M52 64 L132 64 L156 88 L156 208 L52 208 Z" fill="white"/>
+  <path d="M132 64 L132 88 L156 88" fill="none" stroke="url(#docGradient)" stroke-width="4"/>
+
+  <!-- JSON括弧 { } -->
+  <text x="104" y="152" font-family="Monaco, Consolas, monospace" font-size="48" font-weight="bold" fill="url(#bgGradient)" text-anchor="middle">{ }</text>
+
+  <!-- 歯車（右下） -->
+  <circle cx="188" cy="188" r="40" fill="url(#docGradient)"/>
+  <circle cx="188" cy="188" r="16" fill="white"/>
+  <g fill="url(#docGradient)">
+    <rect x="182" y="144" width="12" height="16" rx="4"/>
+    <rect x="182" y="216" width="12" height="16" rx="4"/>
+    <rect x="144" y="182" width="16" height="12" rx="4"/>
+    <rect x="216" y="182" width="16" height="12" rx="4"/>
+    <rect x="152" y="152" width="12" height="16" rx="4" transform="rotate(45 158 160)"/>
+    <rect x="212" y="212" width="12" height="16" rx="4" transform="rotate(45 218 220)"/>
+    <rect x="212" y="152" width="12" height="16" rx="4" transform="rotate(-45 218 160)"/>
+    <rect x="152" y="212" width="12" height="16" rx="4" transform="rotate(-45 158 220)"/>
+  </g>
+</svg>
