@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('エクスポート機能', () => {
+// 設定ファイルを共有するため、並列実行すると干渉が起きる
+test.describe.serial('エクスポート機能', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
@@ -133,11 +134,10 @@ test.describe('エクスポート機能', () => {
     await expect(checkbox).toBeChecked();
 
     // チェックを外す
-    await checkbox.uncheck();
+    await checkbox.click();
     await expect(checkbox).not.toBeChecked();
 
-    // 再度チェック
-    await checkbox.check();
+    await checkbox.click();
     await expect(checkbox).toBeChecked();
   });
 
