@@ -4,7 +4,12 @@ import { getRootPath } from '@/lib/getRootPath';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body: { directory?: string } = {};
+    try {
+      body = await request.json();
+    } catch {
+      // 空のボディの場合は無視
+    }
     const { directory } = body;
 
     if (!directory) {
