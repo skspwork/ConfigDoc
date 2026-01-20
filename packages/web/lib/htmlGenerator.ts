@@ -1,5 +1,6 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
+import { escapeHtml } from './utils';
 import { ProjectConfigFiles, ConfigDocs } from '@/types';
 
 interface ConfigWithDocs {
@@ -92,14 +93,14 @@ export class HtmlGenerator {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${this.escapeHtml(metadata.projectName)} - ConfigDoc</title>
+  <title>${escapeHtml(metadata.projectName)} - ConfigDoc</title>
   ${this.getStyles()}
 </head>
 <body>
   <div class="container">
     <header>
       <div class="header-content">
-        <h1>${this.escapeHtml(metadata.projectName)}</h1>
+        <h1>${escapeHtml(metadata.projectName)}</h1>
         <p class="meta">最終更新: ${new Date(metadata.lastModified).toLocaleString('ja-JP')}</p>
       </div>
     </header>
@@ -755,14 +756,5 @@ export class HtmlGenerator {
       setupSearch();
     }
     `;
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
   }
 }

@@ -1,6 +1,6 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
-import path from 'path';
+import { escapeTableCell, getPropertyByPath, formatValue } from './utils';
 
 export class MarkdownTableGenerator {
   private rootPath: string;
@@ -63,20 +63,20 @@ export class MarkdownTableGenerator {
 
       // 各プロパティの行を追加
       for (const [propertyPath, doc] of propertyEntries) {
-        const propertyName = this.escapeTableCell(propertyPath);
+        const propertyName = escapeTableCell(propertyPath);
         const tags = doc.tags && doc.tags.length > 0
-          ? this.escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
+          ? escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
           : '-';
-        const description = this.escapeTableCell(doc.description || '-');
+        const description = escapeTableCell(doc.description || '-');
         const value = this.getPropertyValue(configData, propertyPath);
-        const valueStr = this.escapeTableCell(value);
+        const valueStr = escapeTableCell(value);
 
         markdown += `| ${propertyName} | ${tags} | ${description} | ${valueStr} |`;
 
         // カスタムフィールドの値を追加
         sortedLabels.forEach(label => {
           const fieldValue = doc.customFields?.[label] || '-';
-          markdown += ` ${this.escapeTableCell(fieldValue)} |`;
+          markdown += ` ${escapeTableCell(fieldValue)} |`;
         });
 
         markdown += '\n';
@@ -90,35 +90,8 @@ export class MarkdownTableGenerator {
     return markdown;
   }
 
-  private getPropertyValue(configData: any, propertyPath: string): string {
-    const keys = propertyPath.split(':');
-    let value = configData;
-
-    for (const key of keys) {
-      if (value && typeof value === 'object' && key in value) {
-        value = value[key];
-      } else {
-        return '-';
-      }
-    }
-
-    // 値を文字列に変換
-    if (value === null || value === undefined) {
-      return '-';
-    }
-
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-
-    return String(value);
-  }
-
-  private escapeTableCell(text: string): string {
-    // Markdownテーブルのセル内で特殊文字をエスケープ
-    return text
-      .replace(/\|/g, '\\|')  // パイプをエスケープ
-      .replace(/\n/g, '<br>') // 改行をHTMLのbrタグに変換
-      .replace(/\r/g, '');     // キャリッジリターンを削除
+  private getPropertyValue(configData: unknown, propertyPath: string): string {
+    const value = getPropertyByPath(configData, propertyPath);
+    return formatValue(value);
   }
 }
