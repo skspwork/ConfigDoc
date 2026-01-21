@@ -132,11 +132,11 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集ボタン（鉛筆アイコン）をクリック
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
 
       // 編集モードのUI確認
-      const editModeLabel = page.getByText('タグの追加・削除');
+      const editModeLabel = page.getByText('タグの追加・削除・名前変更');
       await expect(editModeLabel).toBeVisible();
     }
   });
@@ -146,11 +146,11 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
 
       // 入力フィールドが表示される
-      const input = page.getByPlaceholder('新しいタグを入力');
+      const input = page.getByPlaceholder('新しいタグ名を入力');
       await expect(input).toBeVisible();
     }
   });
@@ -160,20 +160,22 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
+      await page.waitForTimeout(300);
 
       // 新規タグを入力
-      const input = page.getByPlaceholder('新しいタグを入力');
+      const input = page.getByPlaceholder('新しいタグ名を入力');
       await input.fill('custom-tag');
 
       // 追加ボタン（+）をクリック
       const addButton = page.getByTitle('タグを追加');
       await addButton.click();
+      await page.waitForTimeout(300);
 
-      // タグが追加されている
-      const newTag = page.getByText('custom-tag');
-      await expect(newTag).toBeVisible();
+      // タグが追加されている（input fieldとして表示される）
+      const newTagInput = page.locator('input[value="custom-tag"]');
+      await expect(newTagInput).toBeVisible();
     }
   });
 
@@ -182,17 +184,19 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
+      await page.waitForTimeout(300);
 
       // 新規タグを入力してEnter
-      const input = page.getByPlaceholder('新しいタグを入力');
+      const input = page.getByPlaceholder('新しいタグ名を入力');
       await input.fill('enter-tag');
       await input.press('Enter');
+      await page.waitForTimeout(300);
 
-      // タグが追加されている
-      const newTag = page.getByText('enter-tag');
-      await expect(newTag).toBeVisible();
+      // タグが追加されている（input fieldとして表示される）
+      const newTagInput = page.locator('input[value="enter-tag"]');
+      await expect(newTagInput).toBeVisible();
     }
   });
 
@@ -201,15 +205,32 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
 
-      // 既存のタグと同じ名前を入力
-      const input = page.getByPlaceholder('新しいタグを入力');
-      await input.fill('required');
+      // 2つの同名タグを追加してエラーを発生させる
+      const timestamp = Date.now();
+      const input = page.getByPlaceholder('新しいタグ名を入力');
+
+      await input.fill(`重複A${timestamp}`);
+      const addButton = page.getByTitle('タグを追加');
+      await addButton.click();
+      await page.waitForTimeout(300);
+
+      await input.fill(`重複B${timestamp}`);
+      await addButton.click();
+      await page.waitForTimeout(300);
+
+      // 最後に追加したタグ名を1つ前と同じに変更
+      const editTagsContainer = page.locator('.space-y-2').filter({ has: page.getByTitle('タグを削除') });
+      const tagInputs = editTagsContainer.locator('input[type="text"]');
+      const lastInput = tagInputs.last();
+      await lastInput.clear();
+      await lastInput.fill(`重複A${timestamp}`);
+      await page.waitForTimeout(300);
 
       // エラーメッセージが表示される
-      const errorMessage = page.getByText('同じ名前のタグが既にあります');
+      const errorMessage = page.getByText('同じ名前のタグがあります');
       await expect(errorMessage).toBeVisible();
     }
   });
@@ -219,17 +240,36 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
-
-      // タグの×ボタンをクリック
-      // booleanタグの隣にある×ボタンを探す
-      const tagContainer = page.locator('.flex.items-center.gap-1').filter({ hasText: 'boolean' });
-      const deleteButton = tagContainer.locator('button');
-      await deleteButton.click();
-
-      // タグが削除される（編集モード内）
       await page.waitForTimeout(300);
+
+      // 削除前の削除ボタン数を取得
+      const initialDeleteButtons = page.getByTitle('タグを削除');
+      const initialCount = await initialDeleteButtons.count();
+
+      // 新規タグを追加（ユニークな名前を使用）
+      const uniqueTagName = `削除テスト${Date.now()}`;
+      const input = page.getByPlaceholder('新しいタグ名を入力');
+      await input.fill(uniqueTagName);
+
+      const addButton = page.getByTitle('タグを追加');
+      await expect(addButton).toBeEnabled({ timeout: 5000 });
+      await addButton.click();
+      await page.waitForTimeout(500);
+
+      // 追加後は削除ボタンが1つ増えているはず
+      const afterAddCount = await page.getByTitle('タグを削除').count();
+      expect(afterAddCount).toBe(initialCount + 1);
+
+      // 削除ボタンをクリック（最後のもの = 新しく追加したタグ）
+      const deleteButton = page.getByTitle('タグを削除').last();
+      await deleteButton.click();
+      await page.waitForTimeout(300);
+
+      // タグが削除された（削除ボタン数が元に戻る）
+      const afterDeleteCount = await page.getByTitle('タグを削除').count();
+      expect(afterDeleteCount).toBe(initialCount);
     }
   });
 
@@ -238,11 +278,11 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
 
       // 新規タグを追加
-      const input = page.getByPlaceholder('新しいタグを入力');
+      const input = page.getByPlaceholder('新しいタグ名を入力');
       await input.fill('temp-tag');
       const addButton = page.getByTitle('タグを追加');
       await addButton.click();
@@ -252,7 +292,7 @@ test.describe('タグ管理', () => {
       await cancelButton.click();
 
       // 編集モードが閉じて、追加したタグは表示されない
-      const editModeLabel = page.getByText('タグの追加・削除');
+      const editModeLabel = page.getByText('タグの追加・削除・名前変更');
       await expect(editModeLabel).not.toBeVisible();
     }
   });
@@ -262,15 +302,18 @@ test.describe('タグ管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('利用可能なタグを編集');
+      const editButton = page.getByTitle('タグを編集');
       await editButton.click();
+      await page.waitForTimeout(300);
 
       // 新規タグを追加（ユニークな名前を使用）
       const uniqueTagName = `saved-tag-${Date.now()}`;
-      const input = page.getByPlaceholder('新しいタグを入力');
+      const input = page.getByPlaceholder('新しいタグ名を入力');
       await input.fill(uniqueTagName);
+
       const addButton = page.getByTitle('タグを追加');
       await addButton.click();
+      await page.waitForTimeout(300);
 
       // 保存をクリック（編集モード内の緑色の保存ボタン）
       const saveButtonInEditMode = page.locator('button.bg-green-500, button.bg-green-600').filter({ hasText: '保存' });
