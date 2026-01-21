@@ -11,14 +11,14 @@ export async function POST(request: NextRequest) {
   try {
     const rootPath = getRootPath();
 
-    // リクエストボディからフォーマットとファイル名を取得
+    // リクエストボディからフォーマット、ファイル名、出力先フォルダを取得
     let body;
     try {
       body = await request.json();
     } catch {
       body = {};
     }
-    const { format = 'html', fileName = 'config-doc' } = body;
+    const { format = 'html', fileName = 'config-doc', outputDir = '.config_doc/output' } = body;
 
     // フォーマットに応じてジェネレーターを選択
     let content: string;
@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
     const extension = (format === 'markdown' || format === 'markdown-table') ? 'md' : 'html';
     const outputFileName = `${fileName}.${extension}`;
 
-    // 出力パス: .config_doc/output/{fileName}.{extension}
+    // 出力パス: {outputDir}/{fileName}.{extension}
     const fsService = new FileSystemService(rootPath);
     await fsService.ensureConfigDocDir();
-    const outputPath = path.join(rootPath, '.config_doc', 'output', outputFileName);
+    const outputPath = path.join(rootPath, outputDir, outputFileName);
 
     // ディレクトリを確保
-    const outputDir = path.dirname(outputPath);
-    await fs.mkdir(outputDir, { recursive: true });
+    const outputDirPath = path.dirname(outputPath);
+    await fs.mkdir(outputDirPath, { recursive: true });
 
     // ファイルを保存
     await fs.writeFile(outputPath, content, 'utf-8');

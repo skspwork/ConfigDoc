@@ -24,9 +24,44 @@ test.describe.serial('エクスポート機能', () => {
     const pathLabel = page.getByText('出力先パス');
     await expect(pathLabel).toBeVisible();
 
-    // .config_doc/output を含むパス
-    const pathValue = page.getByText(/\.config_doc.*output/);
+    // 出力先パスの値（font-monoクラスで絶対パスを表示）
+    const pathValue = page.locator('.font-mono').filter({ hasText: /config-doc\.html$/ });
     await expect(pathValue).toBeVisible();
+  });
+
+  test('エクスポートダイアログに出力先フォルダが表示される', async ({ page }) => {
+    const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
+    await exportButton.click();
+
+    // 出力先フォルダラベル
+    const folderLabel = page.getByText('出力先フォルダ');
+    await expect(folderLabel).toBeVisible();
+
+    // デフォルトのフォルダパス
+    const folderValue = page.getByText('.config_doc/output');
+    await expect(folderValue).toBeVisible();
+  });
+
+  test('出力先フォルダのフォルダ選択ボタンが表示される', async ({ page }) => {
+    const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
+    await exportButton.click();
+
+    // フォルダ選択ボタン
+    const folderButton = page.getByTitle('フォルダを選択');
+    await expect(folderButton).toBeVisible();
+  });
+
+  test('フォルダ選択ボタンをクリックするとフォルダ選択ダイアログが開く', async ({ page }) => {
+    const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
+    await exportButton.click();
+
+    // フォルダ選択ボタンをクリック
+    const folderButton = page.getByTitle('フォルダを選択');
+    await folderButton.click();
+
+    // フォルダ選択ダイアログが開く
+    const folderDialog = page.getByRole('heading', { name: '出力先フォルダを選択' });
+    await expect(folderDialog).toBeVisible();
   });
 
   test('エクスポートダイアログにファイル名入力欄が表示される', async ({ page }) => {

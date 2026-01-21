@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ExportSettings, ExportFormat } from '@/types';
-import { XIcon, DownloadIcon } from 'lucide-react';
+import { XIcon, DownloadIcon, FolderIcon } from 'lucide-react';
+import { FileBrowser } from './FileBrowser';
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -13,12 +14,14 @@ interface ExportDialogProps {
 const DEFAULT_SETTINGS: ExportSettings = {
   format: 'html',
   autoExport: true,
-  fileName: 'config-doc'
+  fileName: 'config-doc',
+  outputDir: '.config_doc/output'
 };
 
 export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootPath = '.' }: ExportDialogProps) {
   const [settings, setSettings] = useState<ExportSettings>(currentSettings || DEFAULT_SETTINGS);
   const [isExporting, setIsExporting] = useState(false);
+  const [isFolderBrowserOpen, setIsFolderBrowserOpen] = useState(false);
 
   useEffect(() => {
     if (currentSettings) {
@@ -29,10 +32,12 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
   // フォーマットに応じて出力先パスを決定
   const absoluteOutputPath = useMemo(() => {
     const normalized = rootPath.replace(/\//g, '\\');
+    const outputDir = settings.outputDir || '.config_doc/output';
+    const normalizedOutputDir = outputDir.replace(/\//g, '\\');
     const fileName = settings.fileName || 'config-doc';
     const extension = (settings.format === 'markdown' || settings.format === 'markdown-table') ? 'md' : 'html';
-    return `${normalized}\\.config_doc\\output\\${fileName}.${extension}`;
-  }, [settings.format, settings.fileName, rootPath]);
+    return `${normalized}\\${normalizedOutputDir}\\${fileName}.${extension}`;
+  }, [settings.format, settings.fileName, settings.outputDir, rootPath]);
 
   if (!isOpen) return null;
 
@@ -64,20 +69,29 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
 
         {/* コンテンツ */}
         <div className="p-6 space-y-6">
-          {/* 出力先パス */}
+
+          {/* 出力先フォルダ */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              出力先パス
+              出力先フォルダ
             </label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-700 font-mono break-all">
-              {absoluteOutputPath}
+            <div className="flex gap-2">
+              <div
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-700 transition-colors"
+              >
+                {settings.outputDir || '.config_doc/output'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFolderBrowserOpen(true)}
+                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title="フォルダを選択"
+              >
+                <FolderIcon className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              {settings.format === 'html'
-                ? 'HTMLファイルの出力先'
-                : settings.format === 'markdown-table'
-                ? 'Markdownテーブル形式ファイルの出力先'
-                : 'Markdownファイルの出力先'}
+              クリックしてフォルダを選択します（チーム共有設定）
             </p>
           </div>
 
@@ -119,6 +133,16 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
                 ? 'Markdownテーブル形式で出力します（プロパティ名、説明、値、備考）'
                 : 'テキストベースのMarkdownファイルとして出力します'}
             </p>
+          </div>
+
+          {/* 出力先パス */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              出力先パス
+            </label>
+            <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-700 font-mono break-all">
+              {absoluteOutputPath}
+            </div>
           </div>
 
           {/* 自動エクスポート */}
@@ -170,6 +194,36 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
           </button>
         </div>
       </div>
+
+      {/* フォルダ選択ダイアログ */}
+      <FileBrowser
+        isOpen={isFolderBrowserOpen}
+        currentPath={rootPath}
+        onSelect={(paths) => {
+          if (paths.length > 0) {
+            // 絶対パスから相対パスに変換
+            const selectedPath = paths[0];
+            const normalizedRoot = rootPath.replace(/\\/g, '/');
+            const normalizedSelected = selectedPath.replace(/\\/g, '/');
+            let relativePath = normalizedSelected;
+            if (normalizedSelected.startsWith(normalizedRoot)) {
+              relativePath = normalizedSelected.slice(normalizedRoot.length);
+              if (relativePath.startsWith('/')) {
+                relativePath = relativePath.slice(1);
+              }
+            }
+            // 空の場合は現在のディレクトリ
+            if (!relativePath) {
+              relativePath = '.';
+            }
+            setSettings({ ...settings, outputDir: relativePath });
+          }
+          setIsFolderBrowserOpen(false);
+        }}
+        onClose={() => setIsFolderBrowserOpen(false)}
+        folderSelectMode={true}
+        title="出力先フォルダを選択"
+      />
     </div>
   );
 }

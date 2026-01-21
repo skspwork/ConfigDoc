@@ -56,6 +56,7 @@ export interface ProjectSettings {
   fields?: Record<string, string>; // プロジェクトのフィールド定義（デフォルト: { "説明": "" }）
   export?: {
     fileName?: string;             // 出力ファイル名（拡張子なし、デフォルト: config-doc）
+    outputDir?: string;            // 出力先フォルダ（相対パス、デフォルト: .config_doc/output）
   };
 }
 
@@ -69,4 +70,5 @@ export interface UserSettings {
 // 統合された設定（レスポンス用）
 export interface ExportSettings extends UserSettings {
   fileName?: string;               // ProjectSettings.export.fileName から取得
+  outputDir?: string;              // ProjectSettings.export.outputDir から取得
 }

@@ -447,7 +447,8 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           format: settings.format,
-          fileName: settings.fileName
+          fileName: settings.fileName,
+          outputDir: settings.outputDir
         })
       });
 

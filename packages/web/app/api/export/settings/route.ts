@@ -29,14 +29,16 @@ export async function GET() {
       };
     }
 
-    // プロジェクト設定から export.fileName を取得
+    // プロジェクト設定から export.fileName と outputDir を取得
     const projectSettings = await fsService.loadProjectSettings();
     const fileName = projectSettings?.export?.fileName || 'config-doc';
+    const outputDir = projectSettings?.export?.outputDir || '.config_doc/output';
 
     // 統合された設定を返す
     const settings: ExportSettings = {
       ...userSettings,
-      fileName
+      fileName,
+      outputDir
     };
 
     return NextResponse.json({
@@ -96,15 +98,16 @@ export async function POST(request: NextRequest) {
       'utf-8'
     );
 
-    // プロジェクト設定の export.fileName を更新
-    if (settings.fileName !== undefined) {
+    // プロジェクト設定の export.fileName と outputDir を更新
+    if (settings.fileName !== undefined || settings.outputDir !== undefined) {
       const existingProjectSettings = await fsService.loadProjectSettings();
 
       if (existingProjectSettings) {
         // 既存の設定を更新
         existingProjectSettings.export = {
           ...existingProjectSettings.export,
-          fileName: settings.fileName
+          fileName: settings.fileName ?? existingProjectSettings.export?.fileName,
+          outputDir: settings.outputDir ?? existingProjectSettings.export?.outputDir
         };
         await fsService.saveProjectSettings(existingProjectSettings);
       } else {
@@ -113,7 +116,8 @@ export async function POST(request: NextRequest) {
           projectName: path.basename(rootPath),
           configFiles: [],
           export: {
-            fileName: settings.fileName
+            fileName: settings.fileName,
+            outputDir: settings.outputDir
           }
         };
         await fsService.saveProjectSettings(newProjectSettings);

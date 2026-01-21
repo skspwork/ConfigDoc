@@ -11,6 +11,10 @@ interface FileBrowserProps {
   onClose: () => void;
   multiSelect?: boolean;
   filterJsonOnly?: boolean;
+  /** フォルダ選択モード（trueの場合、ファイルは表示せずフォルダのみ選択可能） */
+  folderSelectMode?: boolean;
+  /** ダイアログのタイトル */
+  title?: string;
 }
 
 export function FileBrowser({
@@ -19,7 +23,9 @@ export function FileBrowser({
   onSelect,
   onClose,
   multiSelect = false,
-  filterJsonOnly = false
+  filterJsonOnly = false,
+  folderSelectMode = false,
+  title
 }: FileBrowserProps) {
   const [path, setPath] = useState(currentPath);
   const [items, setItems] = useState<FileSystemItem[]>([]);
@@ -52,11 +58,17 @@ export function FileBrowser({
       const data = await response.json();
       if (data.success) {
         // フィルタリング
-        const filtered = filterJsonOnly
-          ? data.data.items.filter((item: FileSystemItem) =>
-              item.type === 'directory' || item.extension === '.json'
-            )
-          : data.data.items;
+        let filtered = data.data.items;
+        if (folderSelectMode) {
+          // フォルダ選択モード：フォルダのみ表示
+          filtered = data.data.items.filter((item: FileSystemItem) =>
+            item.type === 'directory'
+          );
+        } else if (filterJsonOnly) {
+          filtered = data.data.items.filter((item: FileSystemItem) =>
+            item.type === 'directory' || item.extension === '.json'
+          );
+        }
         setItems(filtered);
       } else {
         console.error('API returned error:', data.error);
@@ -70,8 +82,14 @@ export function FileBrowser({
 
   const handleItemClick = (item: FileSystemItem) => {
     if (item.type === 'directory') {
-      setPath(item.path);
-      // ディレクトリ移動時は選択を保持
+      if (folderSelectMode) {
+        // フォルダ選択モード：ダブルクリックで移動、シングルクリックで選択
+        // ここではシングルクリックで選択のみ（移動はダブルクリックで）
+        setSelectedFiles([item.path]);
+      } else {
+        // 通常モード：ディレクトリはクリックで移動
+        setPath(item.path);
+      }
     } else {
       if (multiSelect) {
         // 複数選択モード
@@ -84,6 +102,14 @@ export function FileBrowser({
         // 単一選択モード
         setSelectedFiles([item.path]);
       }
+    }
+  };
+
+  const handleItemDoubleClick = (item: FileSystemItem) => {
+    if (item.type === 'directory') {
+      // ダブルクリックでディレクトリに移動
+      setPath(item.path);
+      setSelectedFiles([]);
     }
   };
 
@@ -118,7 +144,13 @@ export function FileBrowser({
   };
 
   const handleConfirm = () => {
-    if (selectedFiles.length > 0) {
+    if (folderSelectMode) {
+      // フォルダ選択モード：選択されたフォルダがあればそれを、なければ現在のパスを返す
+      const selectedPath = selectedFiles.length > 0 ? selectedFiles : [path];
+      onSelect(selectedPath);
+      setSelectedFiles([]);
+      onClose();
+    } else if (selectedFiles.length > 0) {
       onSelect(selectedFiles);
       setSelectedFiles([]);
       onClose();
@@ -137,7 +169,7 @@ export function FileBrowser({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">ファイルを選択</h2>
+          <h2 className="text-lg font-semibold">{title || (folderSelectMode ? 'フォルダを選択' : 'ファイルを選択')}</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700"
@@ -170,6 +202,7 @@ export function FileBrowser({
                   <div
                     key={item.path}
                     onClick={() => handleItemClick(item)}
+                    onDoubleClick={() => handleItemDoubleClick(item)}
                     className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 ${
                       isSelected ? 'bg-blue-100' : ''
                     }`}
@@ -180,7 +213,7 @@ export function FileBrowser({
                       <FileIcon className="w-5 h-5 text-green-500" />
                     )}
                     <span className="text-sm">{item.name}</span>
-                    {isSelected && multiSelect && (
+                    {isSelected && (multiSelect || folderSelectMode) && (
                       <span className="ml-auto text-blue-500">✓</span>
                     )}
                   </div>
@@ -192,11 +225,15 @@ export function FileBrowser({
 
         {/* フッター */}
         <div className="flex items-center justify-between p-4 border-t">
-          {multiSelect && selectedFiles.length > 0 && (
+          {folderSelectMode ? (
+            <div className="text-sm text-gray-600">
+              {selectedFiles.length > 0 ? `選択中: ${selectedFiles[0].split(/[/\\]/).pop()}` : `現在のフォルダ: ${path.split(/[/\\]/).pop() || path}`}
+            </div>
+          ) : multiSelect && selectedFiles.length > 0 ? (
             <div className="text-sm text-gray-600">
               {selectedFiles.length}件選択中
             </div>
-          )}
+          ) : null}
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={handleClose}
@@ -206,7 +243,7 @@ export function FileBrowser({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={selectedFiles.length === 0}
+              disabled={!folderSelectMode && selectedFiles.length === 0}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               選択
