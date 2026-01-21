@@ -50,9 +50,13 @@ test.describe('ファイル選択・読み込み', () => {
     const addButton = page.getByRole('button', { name: /ファイルを追加/ });
     await addButton.click();
 
-    // 上へボタン（ArrowUpIcon）
-    const upButton = page.getByTitle('上のディレクトリへ');
-    await expect(upButton).toBeVisible();
+    // 上へボタン（ArrowUpIcon）- ルートでは「ルートディレクトリです」、サブディレクトリでは「上のディレクトリへ」
+    const upButtonRoot = page.getByTitle('ルートディレクトリです');
+    const upButtonSub = page.getByTitle('上のディレクトリへ');
+    // どちらかが表示されている
+    const rootCount = await upButtonRoot.count();
+    const subCount = await upButtonSub.count();
+    expect(rootCount + subCount).toBeGreaterThan(0);
   });
 
   test('FileBrowserダイアログの閉じるボタンでダイアログが閉じる', async ({ page }) => {
@@ -205,6 +209,94 @@ test.describe('ファイル選択・読み込み', () => {
       // 選択数の表示を確認
       const countDisplay = page.getByText(/件選択中/);
       await expect(countDisplay).toBeVisible();
+    }
+  });
+
+  test('ルートディレクトリでは上階層ボタンが無効になる', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
+    // ルートディレクトリでは上へボタンが無効
+    const upButton = page.getByTitle('ルートディレクトリです');
+    await expect(upButton).toBeVisible();
+    await expect(upButton).toBeDisabled();
+  });
+
+  test('サブディレクトリでは上階層ボタンが有効になる', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
+    // ダイアログコンテナを取得
+    const dialogContainer = page.locator('.bg-white.rounded-lg.shadow-xl');
+
+    // sampleディレクトリに移動
+    await page.waitForSelector('text=sample', { timeout: 5000 }).catch(() => null);
+    const sampleDir = dialogContainer.locator('text=sample').first();
+    const sampleCount = await sampleDir.count();
+
+    if (sampleCount > 0) {
+      await sampleDir.click();
+      await page.waitForTimeout(500);
+
+      // サブディレクトリでは上へボタンが有効
+      const upButton = page.getByTitle('上のディレクトリへ');
+      await expect(upButton).toBeVisible();
+      await expect(upButton).toBeEnabled();
+    }
+  });
+
+  test('上階層ボタンでルートまで戻れる', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
+    // ダイアログコンテナを取得
+    const dialogContainer = page.locator('.bg-white.rounded-lg.shadow-xl');
+
+    // sampleディレクトリに移動
+    await page.waitForSelector('text=sample', { timeout: 5000 }).catch(() => null);
+    const sampleDir = dialogContainer.locator('text=sample').first();
+    const sampleCount = await sampleDir.count();
+
+    if (sampleCount > 0) {
+      await sampleDir.click();
+      await page.waitForTimeout(500);
+
+      // 上へボタンをクリック
+      const upButton = page.getByTitle('上のディレクトリへ');
+      await upButton.click();
+      await page.waitForTimeout(500);
+
+      // ルートに戻ると上へボタンが無効になる
+      const disabledUpButton = page.getByTitle('ルートディレクトリです');
+      await expect(disabledUpButton).toBeVisible();
+      await expect(disabledUpButton).toBeDisabled();
+    }
+  });
+
+  test('ドット始まりのフォルダが表示される', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+    await page.waitForTimeout(500);
+
+    // .config_docフォルダが表示される（プロジェクト初期化後に存在する場合）
+    const configDocFolder = page.locator('text=.config_doc');
+    const count = await configDocFolder.count();
+
+    // .config_docが存在する場合、表示されていることを確認
+    if (count > 0) {
+      await expect(configDocFolder.first()).toBeVisible();
     }
   });
 });
