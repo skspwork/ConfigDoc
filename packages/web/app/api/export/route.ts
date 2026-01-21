@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
     } catch {
       body = {};
     }
-    const { format = 'html', fileName = 'config-doc', outputDir = '.config_doc/output' } = body;
+    const { format = 'html', fileName = 'config-doc' } = body;
+    // outputDirが空文字列の場合はプロジェクトルートに出力
+    const outputDir = body.outputDir?.trim() || '';
 
     // フォーマットに応じてジェネレーターを選択
     let content: string;
@@ -39,10 +41,12 @@ export async function POST(request: NextRequest) {
     const extension = (format === 'markdown' || format === 'markdown-table') ? 'md' : 'html';
     const outputFileName = `${fileName}.${extension}`;
 
-    // 出力パス: {outputDir}/{fileName}.{extension}
+    // 出力パス: {outputDir}/{fileName}.{extension}（outputDirが空ならルート直下）
     const fsService = new FileSystemService(rootPath);
     await fsService.ensureConfigDocDir();
-    const outputPath = path.join(rootPath, outputDir, outputFileName);
+    const outputPath = outputDir
+      ? path.join(rootPath, outputDir, outputFileName)
+      : path.join(rootPath, outputFileName);
 
     // ディレクトリを確保
     const outputDirPath = path.dirname(outputPath);

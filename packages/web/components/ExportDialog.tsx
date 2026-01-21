@@ -32,11 +32,14 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
   // フォーマットに応じて出力先パスを決定
   const absoluteOutputPath = useMemo(() => {
     const normalized = rootPath.replace(/\//g, '\\');
-    const outputDir = settings.outputDir || '.config_doc/output';
-    const normalizedOutputDir = outputDir.replace(/\//g, '\\');
+    const outputDir = settings.outputDir?.trim() || '';
     const fileName = settings.fileName || 'config-doc';
     const extension = (settings.format === 'markdown' || settings.format === 'markdown-table') ? 'md' : 'html';
-    return `${normalized}\\${normalizedOutputDir}\\${fileName}.${extension}`;
+    if (outputDir) {
+      const normalizedOutputDir = outputDir.replace(/\//g, '\\');
+      return `${normalized}\\${normalizedOutputDir}\\${fileName}.${extension}`;
+    }
+    return `${normalized}\\${fileName}.${extension}`;
   }, [settings.format, settings.fileName, settings.outputDir, rootPath]);
 
   if (!isOpen) return null;
@@ -76,11 +79,13 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               出力先フォルダ
             </label>
             <div className="flex gap-2">
-              <div
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-700 transition-colors"
-              >
-                {settings.outputDir || '.config_doc/output'}
-              </div>
+              <input
+                type="text"
+                value={settings.outputDir || ''}
+                onChange={(e) => setSettings({ ...settings, outputDir: e.target.value })}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="（空欄でプロジェクトルート）"
+              />
               <button
                 type="button"
                 onClick={() => setIsFolderBrowserOpen(true)}
@@ -91,7 +96,7 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               </button>
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              クリックしてフォルダを選択します（チーム共有設定）
+              相対パスを入力またはフォルダを選択（空欄でプロジェクトルート、チーム共有設定）
             </p>
           </div>
 

@@ -30,9 +30,12 @@ export async function GET() {
     }
 
     // プロジェクト設定から export.fileName と outputDir を取得
+    // outputDirは空文字も有効な値（プロジェクトルートを意味する）なので、undefinedのみデフォルト値を使用
     const projectSettings = await fsService.loadProjectSettings();
     const fileName = projectSettings?.export?.fileName || 'config-doc';
-    const outputDir = projectSettings?.export?.outputDir || '.config_doc/output';
+    const outputDir = projectSettings?.export?.outputDir !== undefined
+      ? projectSettings.export.outputDir
+      : '.config_doc/output';
 
     // 統合された設定を返す
     const settings: ExportSettings = {

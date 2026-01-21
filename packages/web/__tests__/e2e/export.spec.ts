@@ -37,9 +37,9 @@ test.describe.serial('エクスポート機能', () => {
     const folderLabel = page.getByText('出力先フォルダ');
     await expect(folderLabel).toBeVisible();
 
-    // デフォルトのフォルダパス
-    const folderValue = page.getByText('.config_doc/output');
-    await expect(folderValue).toBeVisible();
+    // 出力先フォルダ入力欄（プレースホルダーで確認）
+    const folderInput = page.getByPlaceholder('（空欄でプロジェクトルート）');
+    await expect(folderInput).toBeVisible();
   });
 
   test('出力先フォルダのフォルダ選択ボタンが表示される', async ({ page }) => {
@@ -64,6 +64,37 @@ test.describe.serial('エクスポート機能', () => {
     await expect(folderDialog).toBeVisible();
   });
 
+  test('出力先フォルダを直接入力できる', async ({ page }) => {
+    const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
+    await exportButton.click();
+
+    // 出力先フォルダ入力欄
+    const folderInput = page.getByPlaceholder('（空欄でプロジェクトルート）');
+    await folderInput.clear();
+    await folderInput.fill('output');
+
+    await expect(folderInput).toHaveValue('output');
+
+    // 出力先パスが更新される
+    const pathValue = page.locator('.font-mono').filter({ hasText: /output\\config-doc\.html$/ });
+    await expect(pathValue).toBeVisible();
+  });
+
+  test('出力先フォルダを空にするとプロジェクトルートが出力先になる', async ({ page }) => {
+    const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
+    await exportButton.click();
+
+    // 出力先フォルダ入力欄を空に
+    const folderInput = page.getByPlaceholder('（空欄でプロジェクトルート）');
+    await folderInput.clear();
+
+    await expect(folderInput).toHaveValue('');
+
+    // 出力先パスがプロジェクトルート直下になる（フォルダパスなし）
+    const pathValue = page.locator('.font-mono').filter({ hasText: /config-doc\.html$/ });
+    await expect(pathValue).toBeVisible();
+  });
+
   test('エクスポートダイアログにファイル名入力欄が表示される', async ({ page }) => {
     const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
     await exportButton.click();
@@ -72,8 +103,8 @@ test.describe.serial('エクスポート機能', () => {
     const fileNameLabel = page.getByText('ファイル名', { exact: true });
     await expect(fileNameLabel).toBeVisible();
 
-    // 入力欄
-    const input = page.getByRole('textbox');
+    // 入力欄（プレースホルダーで特定）
+    const input = page.getByPlaceholder('config-doc');
     await expect(input).toBeVisible();
   });
 
@@ -81,8 +112,8 @@ test.describe.serial('エクスポート機能', () => {
     const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
     await exportButton.click();
 
-    // デフォルトファイル名
-    const input = page.getByRole('textbox');
+    // デフォルトファイル名（プレースホルダーで特定）
+    const input = page.getByPlaceholder('config-doc');
     await expect(input).toHaveValue('config-doc');
   });
 
@@ -90,7 +121,7 @@ test.describe.serial('エクスポート機能', () => {
     const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
     await exportButton.click();
 
-    const input = page.getByRole('textbox');
+    const input = page.getByPlaceholder('config-doc');
     await input.clear();
     await input.fill('my-config-doc');
 
