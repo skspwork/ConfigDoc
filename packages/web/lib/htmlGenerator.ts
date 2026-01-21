@@ -397,6 +397,11 @@ export class HtmlGenerator {
       line-height: 1.8;
     }
 
+    .doc-section p.field-value {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .placeholder {
       color: #9ca3af;
       text-align: center;
@@ -600,7 +605,7 @@ export class HtmlGenerator {
           if (value) {
             html += \`<div class="doc-section">
               <h3>\${escapeHtml(label)}</h3>
-              <p>\${escapeHtml(value)}</p>
+              <p class="field-value">\${escapeHtml(value)}</p>
             </div>\`;
           }
         });
