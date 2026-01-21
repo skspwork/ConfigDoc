@@ -191,7 +191,8 @@ export function useConfigManager(): UseConfigManagerReturn {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           format: exportSettings.format,
-          fileName: exportSettings.fileName
+          fileName: exportSettings.fileName,
+          outputDir: exportSettings.outputDir
         })
       });
 
