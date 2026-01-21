@@ -4,7 +4,7 @@ const path = require('path');
 
 // Paths
 const webRoot = path.join(__dirname, '..', 'packages', 'web');
-const standaloneRoot = path.join(webRoot, '.next', 'standalone', 'packages', 'web');
+const standaloneRoot = path.join(webRoot, '.next', 'standalone');
 const staticSource = path.join(webRoot, '.next', 'static');
 const staticDest = path.join(standaloneRoot, '.next', 'static');
 const publicSource = path.join(webRoot, 'public');

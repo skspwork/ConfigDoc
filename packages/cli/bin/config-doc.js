@@ -83,7 +83,7 @@ async function main() {
 
     // Next.jsアプリのパスを取得
     const webAppPath = path.join(__dirname, '..', '..', 'web');
-    const standaloneRoot = path.join(webAppPath, '.next', 'standalone', 'packages', 'web');
+    const standaloneRoot = path.join(webAppPath, '.next', 'standalone');
     const standaloneServerPath = path.join(standaloneRoot, 'server.js');
 
     // 環境変数を設定
