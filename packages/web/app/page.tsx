@@ -48,6 +48,10 @@ export default function Home() {
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // ドラッグ＆ドロップ用の状態
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   const showToast = (message: string, type: ToastType = 'success') => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -312,6 +316,59 @@ export default function Home() {
     setHasUnsavedChanges(false);
   };
 
+  // ドラッグ＆ドロップでタブの並び替え
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndex !== null && dragIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (index: number) => {
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // 配列の並び替え
+    setLoadedConfigs(prev => {
+      const newConfigs = [...prev];
+      const [draggedItem] = newConfigs.splice(dragIndex, 1);
+      newConfigs.splice(index, 0, draggedItem);
+
+      // メタデータを更新
+      updateMetadata(newConfigs.map(c => c.filePath));
+
+      return newConfigs;
+    });
+
+    // アクティブなインデックスを調整
+    if (activeConfigIndex === dragIndex) {
+      setActiveConfigIndex(index);
+    } else if (dragIndex < activeConfigIndex && index >= activeConfigIndex) {
+      setActiveConfigIndex(activeConfigIndex - 1);
+    } else if (dragIndex > activeConfigIndex && index <= activeConfigIndex) {
+      setActiveConfigIndex(activeConfigIndex + 1);
+    }
+
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
   // projectFieldsでフィルタリングしてPropertyDocを整形
   const normalizePropertyDoc = (doc: PropertyDoc): PropertyDoc => {
     const filteredFields: Record<string, string> = {};
@@ -532,16 +589,26 @@ export default function Home() {
               {loadedConfigs.map((config, index) => (
                 <div
                   key={config.filePath}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => {
                     setActiveConfigIndex(index);
                     setSelectedPath('');
                     setEditingDoc(null);
                     setHasUnsavedChanges(false);
                   }}
-                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 cursor-grab transition-all duration-200 ${
                     activeConfigIndex === index
                       ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-400 shadow-md'
                       : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+                  } ${
+                    dragIndex === index ? 'opacity-50' : ''
+                  } ${
+                    dragOverIndex === index ? 'border-blue-500 border-dashed' : ''
                   }`}
                 >
                   <span className={`text-sm font-medium ${
