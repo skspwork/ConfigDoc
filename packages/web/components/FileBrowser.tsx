@@ -113,7 +113,28 @@ export function FileBrowser({
     }
   };
 
+  // 現在のパスがルートパス（currentPath）より上かどうかをチェック
+  const isAtOrAboveRoot = (targetPath: string): boolean => {
+    const normalizedTarget = targetPath.replace(/\//g, '\\').toLowerCase();
+    const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+    // ターゲットがルートと同じか、ルートの親ディレクトリの場合はtrue
+    return !normalizedRoot.startsWith(normalizedTarget) || normalizedTarget === normalizedRoot;
+  };
+
+  // 親ディレクトリへの移動が可能かどうか
+  const canGoUp = (): boolean => {
+    const normalizedPath = path.replace(/\//g, '\\').toLowerCase();
+    const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+    // 現在のパスがルートパスと同じなら上に移動できない
+    return normalizedPath !== normalizedRoot;
+  };
+
   const handleGoUp = () => {
+    // ルートパスより上には移動できない
+    if (!canGoUp()) {
+      return;
+    }
+
     // Windowsのパス区切り文字を考慮してパスを正規化
     const normalizedPath = path.replace(/\//g, '\\');
     const pathParts = normalizedPath.split('\\').filter(p => p);
@@ -134,9 +155,21 @@ export function FileBrowser({
         // 相対パスの場合
         parentPath = parentParts.join('\\');
       }
-      setPath(parentPath);
+
+      // 親パスがルートパスより上なら移動しない
+      const normalizedParent = parentPath.replace(/\//g, '\\').toLowerCase();
+      const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+      if (!normalizedParent.startsWith(normalizedRoot.split('\\').slice(0, -1).join('\\')) ||
+          normalizedRoot.startsWith(normalizedParent + '\\') ||
+          normalizedRoot === normalizedParent) {
+        setPath(parentPath);
+      }
     } else if (pathParts.length === 1 && !pathParts[0].includes(':')) {
       // ルート以外の単一ディレクトリの場合
+      const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+      if (normalizedRoot === '.') {
+        return; // ルートが'.'なら上に移動しない
+      }
       setPath('.');
     }
     // ドライブルート（例: C:\）の場合は何もしない
@@ -182,8 +215,9 @@ export function FileBrowser({
         <div className="flex items-center gap-2 p-4 border-b bg-gray-50">
           <button
             onClick={handleGoUp}
-            className="p-2 hover:bg-gray-200 rounded flex-shrink-0"
-            title="上のディレクトリへ"
+            disabled={!canGoUp()}
+            className={`p-2 rounded flex-shrink-0 ${canGoUp() ? 'hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+            title={canGoUp() ? '上のディレクトリへ' : 'ルートディレクトリです'}
           >
             <ArrowUpIcon className="w-5 h-5" />
           </button>
