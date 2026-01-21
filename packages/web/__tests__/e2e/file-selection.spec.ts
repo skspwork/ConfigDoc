@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe.serial('ファイル選択・読み込み', () => {
+test.describe('ファイル選択・読み込み', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
