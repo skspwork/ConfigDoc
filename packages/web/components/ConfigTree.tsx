@@ -62,18 +62,15 @@ export function ConfigTree({
     const doc = docs.properties[path];
     if (!doc) return false;
 
-    // 説明があるか
-    if (doc.description && doc.description.trim() !== '') return true;
-
     // タグがあるか
     if (doc.tags && doc.tags.length > 0) return true;
 
-    // カスタムフィールドに値があるか
-    if (doc.customFields) {
-      const hasCustomFieldValue = Object.values(doc.customFields).some(
+    // フィールドに値があるか
+    if (doc.fields) {
+      const hasFieldValue = Object.values(doc.fields).some(
         value => value && value.trim() !== ''
       );
-      if (hasCustomFieldValue) return true;
+      if (hasFieldValue) return true;
     }
 
     return false;

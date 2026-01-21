@@ -127,8 +127,8 @@ test.describe('プロパティドキュメント編集', () => {
       const descriptionLabel = page.getByText('説明', { exact: true });
       await expect(descriptionLabel).toBeVisible();
 
-      // テキストエリア（メインの説明入力欄を指定）
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+      // テキストエリア（説明フィールドの入力欄）
+      const textarea = page.getByPlaceholder('説明を入力してください');
       await expect(textarea).toBeVisible();
     }
   });
@@ -137,8 +137,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
-      await expect(textarea).toHaveAttribute('placeholder', 'このプロパティの説明を入力してください');
+      const textarea = page.getByPlaceholder('説明を入力してください');
+      await expect(textarea).toHaveAttribute('placeholder', '説明を入力してください');
     }
   });
 
@@ -164,8 +164,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // テキストエリアに入力（メインの説明入力欄を指定）
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+      // テキストエリアに入力（説明フィールドの入力欄）
+      const textarea = page.getByPlaceholder('説明を入力してください');
       await textarea.fill('データベース接続文字列です');
 
       // 保存ボタンが有効になる
@@ -178,8 +178,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // テキストエリアに入力（メインの説明入力欄を指定）（ユニークなテキスト）
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+      // テキストエリアに入力（説明フィールドの入力欄）（ユニークなテキスト）
+      const textarea = page.getByPlaceholder('説明を入力してください');
       await textarea.clear();
       await textarea.fill(`テスト用の説明文 ${Date.now()}`);
       await page.waitForTimeout(300);
@@ -199,8 +199,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // テキストエリアに入力（メインの説明入力欄を指定）（ユニークなテキスト）
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+      // テキストエリアに入力（説明フィールドの入力欄）（ユニークなテキスト）
+      const textarea = page.getByPlaceholder('説明を入力してください');
       await textarea.clear();
       await textarea.fill(`保存後無効テスト ${Date.now()}`);
       await page.waitForTimeout(300);
@@ -237,8 +237,8 @@ test.describe('プロパティドキュメント編集', () => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // テキストエリアに入力（未保存）（メインの説明入力欄を指定）
-      const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+      // テキストエリアに入力（未保存）（説明フィールドの入力欄）
+      const textarea = page.getByPlaceholder('説明を入力してください');
       await textarea.fill('未保存のテスト');
 
       // ダイアログのハンドラーを設定
@@ -263,13 +263,13 @@ test.describe('プロパティドキュメント編集', () => {
     }
   });
 
-  test('カスタムフィールドセクションが表示される', async ({ page }) => {
+  test('フィールドセクションが表示される', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // カスタムフィールドラベル（exact: true で完全一致）
-      const customFieldLabel = page.getByText('カスタムフィールド', { exact: true });
-      await expect(customFieldLabel).toBeVisible();
+      // フィールドラベル（exact: true で完全一致）
+      const fieldLabel = page.getByText('フィールド', { exact: true });
+      await expect(fieldLabel).toBeVisible();
     }
   });
 });

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ConfigDocs, PropertyDoc, ExportSettings } from '@/types';
+import { ConfigDocs, PropertyDoc, ExportSettings, DEFAULT_FIELDS } from '@/types';
 import { ConfigTree } from '@/components/ConfigTree';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ExportDialog } from '@/components/ExportDialog';
 import { TagEditor } from '@/components/TagEditor';
-import { CustomFieldsEditor } from '@/components/CustomFieldsEditor';
+import { FieldsEditor } from '@/components/FieldsEditor';
 import { ToastContainer, ToastType } from '@/components/Toast';
 import { FolderOpenIcon, XIcon, SaveIcon, DownloadIcon, FileTextIcon } from 'lucide-react';
 
@@ -42,8 +42,8 @@ export default function Home() {
   // 利用可能なタグ
   const [availableTags, setAvailableTags] = useState<string[]>(['required', 'nullable', 'string', 'number', 'boolean']);
 
-  // プロジェクトのカスタムフィールド定義
-  const [projectCustomFields, setProjectCustomFields] = useState<Record<string, string>>({});
+  // プロジェクトのフィールド定義（デフォルト: { "説明": "" }）
+  const [projectFields, setProjectFields] = useState<Record<string, string>>(DEFAULT_FIELDS);
 
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -61,18 +61,15 @@ export default function Home() {
   const checkForChanges = (current: PropertyDoc | null, original: PropertyDoc | null): boolean => {
     if (!current || !original) return false;
 
-    // 説明の比較
-    if (current.description !== original.description) return true;
-
     // タグの比較
     const currentTags = current.tags || [];
     const originalTags = original.tags || [];
     if (currentTags.length !== originalTags.length) return true;
     if (currentTags.some((tag, index) => tag !== originalTags[index])) return true;
 
-    // カスタムフィールドの比較（値の変更のみ検出、フィールドの追加・削除は無視）
-    const currentFields = current.customFields || {};
-    const originalFields = original.customFields || {};
+    // フィールドの比較（値の変更のみ検出、フィールドの追加・削除は無視）
+    const currentFields = current.fields || {};
+    const originalFields = original.fields || {};
     // 両方に存在するキーの値を比較
     const allKeys = new Set([...Object.keys(currentFields), ...Object.keys(originalFields)]);
     for (const key of allKeys) {
@@ -152,9 +149,9 @@ export default function Home() {
               setAvailableTags(metaResult.data.availableTags);
             }
 
-            // プロジェクトのカスタムフィールドを読み込む
-            if (metaResult.success && metaResult.data?.customFields) {
-              setProjectCustomFields(metaResult.data.customFields);
+            // プロジェクトのフィールドを読み込む
+            if (metaResult.success && metaResult.data?.fields) {
+              setProjectFields(metaResult.data.fields);
             }
           }
         }
@@ -315,6 +312,15 @@ export default function Home() {
     setHasUnsavedChanges(false);
   };
 
+  // projectFieldsでフィルタリングしてPropertyDocを整形
+  const normalizePropertyDoc = (doc: PropertyDoc): PropertyDoc => {
+    const filteredFields: Record<string, string> = {};
+    for (const key of Object.keys(projectFields)) {
+      filteredFields[key] = doc.fields[key] || '';
+    }
+    return { ...doc, fields: filteredFields };
+  };
+
   const handleSelectProperty = (path: string) => {
     if (hasUnsavedChanges) {
       if (!confirm('保存されていない変更があります。破棄しますか？')) {
@@ -326,26 +332,19 @@ export default function Home() {
     const existingDoc = activeConfig.docs.properties[path];
 
     if (existingDoc) {
-      // 既存ドキュメントのカスタムフィールドをprojectCustomFieldsでフィルタリング
-      // projectCustomFieldsに存在するフィールドのみ表示し、保存済みの値を引き継ぐ
-      const filteredCustomFields: Record<string, string> = {};
-      for (const key of Object.keys(projectCustomFields)) {
-        filteredCustomFields[key] = existingDoc.customFields?.[key] || '';
-      }
-      const docCopy = {
+      // 既存ドキュメントを移行・フィルタリング
+      const docCopy = normalizePropertyDoc({
         ...existingDoc,
-        tags: existingDoc.tags || [],
-        customFields: filteredCustomFields
-      };
+        tags: existingDoc.tags || []
+      });
       setEditingDoc(docCopy);
       setOriginalDoc(docCopy);
     } else {
-      // 新規ドキュメント（プロジェクトのカスタムフィールドを適用）
-      const newDoc = {
+      // 新規ドキュメント（プロジェクトのフィールドを適用）
+      const newDoc: PropertyDoc = {
         path,
-        description: '',
         tags: [],
-        customFields: { ...projectCustomFields },
+        fields: { ...projectFields },
         modifiedAt: new Date().toISOString()
       };
       setEditingDoc(newDoc);
@@ -693,45 +692,28 @@ export default function Home() {
                     }}
                   />
 
-                  {/* 説明 */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      説明
-                    </label>
-                    <textarea
-                      value={editingDoc.description}
-                      onChange={(e) => {
-                        const updated = { ...editingDoc, description: e.target.value };
-                        setEditingDoc(updated);
-                        setHasUnsavedChanges(checkForChanges(updated, originalDoc));
-                      }}
-                      className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[120px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
-                      placeholder="このプロパティの説明を入力してください"
-                    />
-                  </div>
-
-                  {/* カスタムフィールド */}
-                  <CustomFieldsEditor
-                    customFields={editingDoc.customFields || {}}
-                    projectCustomFields={projectCustomFields}
-                    onCustomFieldsChange={(fields) => {
-                      const updated = { ...editingDoc, customFields: fields };
+                  {/* フィールド */}
+                  <FieldsEditor
+                    fields={editingDoc.fields || {}}
+                    projectFields={projectFields}
+                    onFieldsChange={(fields) => {
+                      const updated = { ...editingDoc, fields };
                       setEditingDoc(updated);
                       setHasUnsavedChanges(checkForChanges(updated, originalDoc));
                     }}
-                    onUpdateProjectCustomFields={async (fields) => {
+                    onUpdateProjectFields={async (fields) => {
                       // 削除されたフィールドを検出
-                      const oldFieldKeys = Object.keys(projectCustomFields);
+                      const oldFieldKeys = Object.keys(projectFields);
                       const newFieldKeys = Object.keys(fields);
                       const removedFields = oldFieldKeys.filter(key => !newFieldKeys.includes(key));
 
                       // プロジェクト設定を自動更新
-                      setProjectCustomFields(fields);
+                      setProjectFields(fields);
                       await fetch('/api/config/metadata', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          customFields: fields
+                          fields: fields
                         })
                       });
 
@@ -742,13 +724,13 @@ export default function Home() {
                           const updatedProperties = { ...config.docs.properties };
 
                           for (const [propPath, doc] of Object.entries(updatedProperties)) {
-                            if (doc.customFields) {
-                              const updatedCustomFields = { ...doc.customFields };
+                            if (doc.fields) {
+                              const updatedFields = { ...doc.fields };
                               let fieldRemoved = false;
 
                               for (const removedField of removedFields) {
-                                if (removedField in updatedCustomFields) {
-                                  delete updatedCustomFields[removedField];
+                                if (removedField in updatedFields) {
+                                  delete updatedFields[removedField];
                                   fieldRemoved = true;
                                 }
                               }
@@ -756,7 +738,7 @@ export default function Home() {
                               if (fieldRemoved) {
                                 updatedProperties[propPath] = {
                                   ...doc,
-                                  customFields: updatedCustomFields
+                                  fields: updatedFields
                                 };
                                 hasChanges = true;
                               }
@@ -789,18 +771,18 @@ export default function Home() {
                       if (originalDoc) {
                         const updatedOriginalFields: Record<string, string> = {};
                         for (const key of newFieldKeys) {
-                          updatedOriginalFields[key] = originalDoc.customFields?.[key] || '';
+                          updatedOriginalFields[key] = originalDoc.fields?.[key] || '';
                         }
-                        setOriginalDoc({ ...originalDoc, customFields: updatedOriginalFields });
+                        setOriginalDoc({ ...originalDoc, fields: updatedOriginalFields });
                       }
 
                       // editingDocも新しいフィールド構造に更新
                       if (editingDoc) {
                         const updatedEditingFields: Record<string, string> = {};
                         for (const key of newFieldKeys) {
-                          updatedEditingFields[key] = editingDoc.customFields?.[key] || '';
+                          updatedEditingFields[key] = editingDoc.fields?.[key] || '';
                         }
-                        const updated = { ...editingDoc, customFields: updatedEditingFields };
+                        const updated = { ...editingDoc, fields: updatedEditingFields };
                         setEditingDoc(updated);
                         setHasUnsavedChanges(false);
                       }

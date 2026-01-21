@@ -595,23 +595,15 @@ export class HtmlGenerator {
           </div>\`;
         }
 
-        if (doc.description) {
-          html += \`<div class="doc-section">
-            <h3>説明</h3>
-            <p>\${escapeHtml(doc.description)}</p>
-          </div>\`;
-        }
-
-        if (doc.customFields && Object.keys(doc.customFields).length > 0) {
-          Object.entries(doc.customFields).forEach(([label, value]) => {
-            if (value) {
-              html += \`<div class="doc-section">
-                <h3>\${escapeHtml(label)}</h3>
-                <p>\${escapeHtml(value)}</p>
-              </div>\`;
-            }
-          });
-        }
+        // フィールドを表示
+        Object.entries(doc.fields).forEach(([label, value]) => {
+          if (value) {
+            html += \`<div class="doc-section">
+              <h3>\${escapeHtml(label)}</h3>
+              <p>\${escapeHtml(value)}</p>
+            </div>\`;
+          }
+        });
 
         if (doc.modifiedAt) {
           html += \`<div class="doc-section">
@@ -687,14 +679,15 @@ export class HtmlGenerator {
           matched = true;
         }
 
-        // ドキュメント（説明と備考）でも検索
+        // ドキュメント（フィールド内容）でも検索
         if (!matched) {
           const doc = config.docs.properties && config.docs.properties[item.dataset.path];
-          if (doc) {
-            const description = (doc.description || '').toLowerCase();
-
-            if (description.includes(query)) {
-              matched = true;
+          if (doc && doc.fields) {
+            for (const [label, value] of Object.entries(doc.fields)) {
+              if (value && value.toLowerCase().includes(query)) {
+                matched = true;
+                break;
+              }
             }
           }
         }
@@ -765,13 +758,13 @@ export class HtmlGenerator {
           return true;
         }
 
-        // ドキュメント（説明）でも検索
+        // ドキュメント（フィールド内容）でも検索
         const doc = config.docs.properties && config.docs.properties[node.path];
-        if (doc) {
-          const description = (doc.description || '').toLowerCase();
-
-          if (description.includes(query)) {
-            return true;
+        if (doc && doc.fields) {
+          for (const [label, value] of Object.entries(doc.fields)) {
+            if (value && value.toLowerCase().includes(query)) {
+              return true;
+            }
           }
         }
 

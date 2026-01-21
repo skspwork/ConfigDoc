@@ -41,7 +41,7 @@ export async function GET() {
       data: {
         ...metadata,
         availableTags: settings.availableTags || ['required', 'nullable', 'string', 'number', 'boolean'],
-        customFields: settings.customFields || {}
+        fields: settings.fields || { '説明': '' }
       }
     });
   } catch (error) {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { configFilePaths, availableTags, customFields } = body;
+    const { configFilePaths, availableTags, fields } = body;
 
     const rootPath = getRootPath();
     const fsService = new FileSystemService(rootPath);
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       projectName: existingSettings?.projectName || path.basename(rootPath),
       configFiles: relativePaths,
       availableTags: availableTags || existingSettings?.availableTags || ['required', 'nullable', 'string', 'number', 'boolean'],
-      customFields: customFields !== undefined ? customFields : (existingSettings?.customFields || {}),
+      fields: fields !== undefined ? fields : (existingSettings?.fields || { '説明': '' }),
       export: existingSettings?.export || {}
     };
 

@@ -61,7 +61,7 @@ test.describe('複合ワークフロー', () => {
     await expect(pathValue).toBeVisible();
 
     // 7. 説明を入力（メインの説明入力欄を指定）（ユニークなテキストで確実に変更を発生させる）
-    const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+    const textarea = page.getByPlaceholder('説明を入力してください');
     await textarea.clear();
     const description = `E2Eテスト用の説明文 ${Date.now()}`;
     await textarea.fill(description);
@@ -114,7 +114,7 @@ test.describe('複合ワークフロー', () => {
     await requiredTag.click();
 
     // 説明を入力（メインの説明入力欄を指定）
-    await page.getByPlaceholder('このプロパティの説明を入力してください').fill('タイムアウト値（秒）');
+    await page.getByPlaceholder('説明を入力してください').fill('タイムアウト値（秒）');
 
     // 保存
     await page.getByRole('button', { name: /保存/ }).click();
@@ -154,7 +154,7 @@ test.describe('複合ワークフロー', () => {
     await page.waitForTimeout(300);
 
     // 説明を入力して保存（メインの説明入力欄を指定）（ユニークなテキストで確実に変更を発生させる）
-    const textarea = page.getByPlaceholder('このプロパティの説明を入力してください');
+    const textarea = page.getByPlaceholder('説明を入力してください');
     await textarea.clear();
     await textarea.fill(`最大プールサイズ - テスト ${Date.now()}`);
     await page.waitForTimeout(300);
@@ -298,7 +298,7 @@ test.describe('エラーハンドリング', () => {
     await page.waitForTimeout(300);
 
     // 説明を入力（未保存）（メインの説明入力欄を指定）
-    await page.getByPlaceholder('このプロパティの説明を入力してください').fill('未保存のテスト');
+    await page.getByPlaceholder('説明を入力してください').fill('未保存のテスト');
 
     // 確認ダイアログを許可するハンドラー
     page.on('dialog', async dialog => {

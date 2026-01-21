@@ -47,17 +47,12 @@ export class MarkdownGenerator {
           markdown += `**タグ:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
         }
 
-        if (doc.description) {
-          markdown += `**説明:**\n\n${doc.description}\n\n`;
-        }
-
-        if (doc.customFields && Object.keys(doc.customFields).length > 0) {
-          Object.entries(doc.customFields).forEach(([label, value]) => {
-            if (value) {
-              markdown += `**${label}:**\n\n${value}\n\n`;
-            }
-          });
-        }
+        // フィールドを表示
+        Object.entries(doc.fields).forEach(([label, value]) => {
+          if (value) {
+            markdown += `**${label}:**\n\n${value}\n\n`;
+          }
+        });
 
         markdown += '---\n\n';
       }

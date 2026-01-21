@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PencilIcon, PlusIcon, XIcon, SaveIcon } from 'lucide-react';
 
-interface CustomFieldsEditorProps {
-  customFields: Record<string, string>;
-  projectCustomFields: Record<string, string>;
-  onCustomFieldsChange: (fields: Record<string, string>) => void;
-  onUpdateProjectCustomFields?: (fields: Record<string, string>) => void;
+interface FieldsEditorProps {
+  fields: Record<string, string>;
+  projectFields: Record<string, string>;
+  onFieldsChange: (fields: Record<string, string>) => void;
+  onUpdateProjectFields?: (fields: Record<string, string>) => void;
 }
 
 interface EditingField {
@@ -16,24 +16,24 @@ interface EditingField {
   isNew: boolean;
 }
 
-export function CustomFieldsEditor({
-  customFields,
-  projectCustomFields,
-  onCustomFieldsChange,
-  onUpdateProjectCustomFields
-}: CustomFieldsEditorProps) {
+export function FieldsEditor({
+  fields,
+  projectFields,
+  onFieldsChange,
+  onUpdateProjectFields
+}: FieldsEditorProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingFields, setEditingFields] = useState<EditingField[]>([]);
   const [newFieldLabel, setNewFieldLabel] = useState('');
 
   // 編集モードに入る際、現在のフィールドをコピー
   const enterEditMode = () => {
-    const fields = Object.keys(customFields).map(label => ({
+    const fieldList = Object.keys(projectFields).map(label => ({
       originalLabel: label,
       newLabel: label,
       isNew: false
     }));
-    setEditingFields(fields);
+    setEditingFields(fieldList);
     setIsEditMode(true);
     setNewFieldLabel('');
   };
@@ -84,10 +84,10 @@ export function CustomFieldsEditor({
         newFields[trimmedLabel] = '';
       } else if (field.originalLabel !== trimmedLabel) {
         // 名前変更されたフィールド - 元の値を引き継ぐ
-        newFields[trimmedLabel] = customFields[field.originalLabel] || '';
+        newFields[trimmedLabel] = fields[field.originalLabel] || '';
       } else {
         // 変更なし
-        newFields[trimmedLabel] = customFields[field.originalLabel] || '';
+        newFields[trimmedLabel] = fields[field.originalLabel] || '';
       }
     }
 
@@ -97,12 +97,12 @@ export function CustomFieldsEditor({
       newFields[pendingLabel] = '';
     }
 
-    // カスタムフィールドを更新（ローカル状態）
-    onCustomFieldsChange(newFields);
+    // フィールドを更新（ローカル状態）
+    onFieldsChange(newFields);
 
     // プロジェクト全体に適用
-    if (onUpdateProjectCustomFields) {
-      onUpdateProjectCustomFields(newFields);
+    if (onUpdateProjectFields) {
+      onUpdateProjectFields(newFields);
     }
 
     setIsEditMode(false);
@@ -112,8 +112,8 @@ export function CustomFieldsEditor({
 
   // フィールド値の変更（通常モード）
   const handleFieldValueChange = (label: string, value: string) => {
-    onCustomFieldsChange({
-      ...customFields,
+    onFieldsChange({
+      ...fields,
       [label]: value
     });
   };
@@ -142,13 +142,13 @@ export function CustomFieldsEditor({
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="block text-sm font-semibold text-gray-700">
-          カスタムフィールド
+          フィールド
         </label>
         {!isEditMode && (
           <button
             onClick={enterEditMode}
             className="text-gray-500 hover:text-blue-600 transition-colors p-1"
-            title="カスタムフィールドを編集"
+            title="フィールドを編集"
           >
             <PencilIcon className="w-4 h-4" />
           </button>
@@ -236,31 +236,19 @@ export function CustomFieldsEditor({
       ) : (
         // 通常モード（フィールド値の入力）
         <div className="space-y-3">
-          {Object.keys(customFields).length === 0 ? (
-            <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
-              カスタムフィールドがありません。
-              <button
-                onClick={enterEditMode}
-                className="text-blue-600 hover:text-blue-700 ml-1"
-              >
-                追加する
-              </button>
+          {Object.entries(fields).map(([label, value]) => (
+            <div key={label}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+              </label>
+              <textarea
+                value={value}
+                onChange={(e) => handleFieldValueChange(label, e.target.value)}
+                className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[80px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
+                placeholder={`${label}を入力してください`}
+              />
             </div>
-          ) : (
-            Object.entries(customFields).map(([label, value]) => (
-              <div key={label}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {label}
-                </label>
-                <textarea
-                  value={value}
-                  onChange={(e) => handleFieldValueChange(label, e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[80px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
-                  placeholder={`${label}を入力してください`}
-                />
-              </div>
-            ))
-          )}
+          ))}
         </div>
       )}
     </div>

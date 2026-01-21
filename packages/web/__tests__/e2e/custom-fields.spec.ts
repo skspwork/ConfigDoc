@@ -58,18 +58,18 @@ async function loadConfigAndSelectProperty(page: any) {
   return true;
 }
 
-test.describe('カスタムフィールド管理', () => {
+test.describe('フィールド管理', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('カスタムフィールドセクションが表示される', async ({ page }) => {
+  test('フィールドセクションが表示される', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // exact: true で完全一致させ、「カスタムフィールドがありません」とのマッチを避ける
-      const customFieldLabel = page.getByText('カスタムフィールド', { exact: true });
-      await expect(customFieldLabel).toBeVisible();
+      // exact: true で完全一致
+      const fieldLabel = page.getByText('フィールド', { exact: true });
+      await expect(fieldLabel).toBeVisible();
     }
   });
 
@@ -78,7 +78,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集ボタン（鉛筆アイコン）をクリック
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 編集モードのUI確認
@@ -92,7 +92,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 入力フィールドが表示される
@@ -106,7 +106,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 新規フィールドを入力
@@ -128,7 +128,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 新規フィールドを入力してEnter
@@ -147,7 +147,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
       await page.waitForTimeout(300);
 
@@ -170,8 +170,8 @@ test.describe('カスタムフィールド管理', () => {
       const afterAddCount = await page.getByTitle('フィールドを削除').count();
       expect(afterAddCount).toBe(initialCount + 1);
 
-      // 削除ボタンをクリック（最初のもの）
-      const deleteButton = page.getByTitle('フィールドを削除').first();
+      // 削除ボタンをクリック（最後のもの = 新しく追加したフィールド）
+      const deleteButton = page.getByTitle('フィールドを削除').last();
       await deleteButton.click();
       await page.waitForTimeout(300);
 
@@ -186,7 +186,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 新規フィールドを追加（ユニークな名前を使用）
@@ -199,9 +199,9 @@ test.describe('カスタムフィールド管理', () => {
       await addButton.click();
       await page.waitForTimeout(300);
 
-      // フィールド名を変更（編集フィールド領域内の最初のテキストinputを取得）
+      // フィールド名を変更（編集フィールド領域内の最後のテキストinput = 追加したもの）
       const editFieldsContainer = page.locator('.space-y-2').filter({ has: page.getByTitle('フィールドを削除') });
-      const fieldInput = editFieldsContainer.locator('input[type="text"]').first();
+      const fieldInput = editFieldsContainer.locator('input[type="text"]').last();
       await fieldInput.fill(newName);
 
       // 変更が反映されている
@@ -214,7 +214,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 新規フィールドを追加（ユニークな名前を使用）
@@ -225,9 +225,9 @@ test.describe('カスタムフィールド管理', () => {
       await addButton.click();
       await page.waitForTimeout(300);
 
-      // フィールド名を空にする（編集フィールド領域内の最初のテキストinputを取得）
+      // フィールド名を空にする（編集フィールド領域内の最後のテキストinput = 追加したもの）
       const editFieldsContainer = page.locator('.space-y-2').filter({ has: page.getByTitle('フィールドを削除') });
-      const fieldInput = editFieldsContainer.locator('input[type="text"]').first();
+      const fieldInput = editFieldsContainer.locator('input[type="text"]').last();
       await fieldInput.clear();
 
       // 保存ボタンが無効になる（編集モード内の緑色の保存ボタン）
@@ -241,7 +241,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 2つの同名フィールドを追加（ユニークな名前を使用）
@@ -257,12 +257,12 @@ test.describe('カスタムフィールド管理', () => {
       await addButton.click();
       await page.waitForTimeout(300);
 
-      // 2つ目のフィールド名を1つ目と同じに変更（2番目のinputを取得）
+      // 最後に追加したフィールド名を1つ前と同じに変更
       const editFieldsContainer = page.locator('.space-y-2').filter({ has: page.getByTitle('フィールドを削除') });
       const fieldInputs = editFieldsContainer.locator('input[type="text"]');
-      const secondInput = fieldInputs.nth(1);
-      await secondInput.clear();
-      await secondInput.fill(`重複A${timestamp}`);
+      const lastInput = fieldInputs.last();
+      await lastInput.clear();
+      await lastInput.fill(`重複A${timestamp}`);
       await page.waitForTimeout(300);
 
       // エラーメッセージが表示される
@@ -276,7 +276,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       // 新規フィールドを追加
@@ -300,7 +300,7 @@ test.describe('カスタムフィールド管理', () => {
 
     if (loaded) {
       // 編集モードに入る
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
       await page.waitForTimeout(300);
 
@@ -328,12 +328,12 @@ test.describe('カスタムフィールド管理', () => {
     }
   });
 
-  test('通常モードでカスタムフィールドに値を入力できる', async ({ page }) => {
+  test('通常モードでフィールドに値を入力できる', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
       // まずフィールドを追加（ユニークな名前を使用）
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       const uniqueFieldName = `入力テスト${Date.now()}`;
@@ -357,12 +357,12 @@ test.describe('カスタムフィールド管理', () => {
     }
   });
 
-  test('カスタムフィールドに値を入力すると保存ボタンが有効になる', async ({ page }) => {
+  test('フィールドに値を入力すると保存ボタンが有効になる', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
       // まずフィールドを追加（ユニークな名前を使用）
-      const editButton = page.getByTitle('カスタムフィールドを編集');
+      const editButton = page.getByTitle('フィールドを編集');
       await editButton.click();
 
       const uniqueFieldName = `保存有効化${Date.now()}`;

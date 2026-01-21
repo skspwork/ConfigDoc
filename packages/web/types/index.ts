@@ -22,9 +22,8 @@ export interface ConfigDocs {
 
 export interface PropertyDoc {
   path: string;                    // "Database:ConnectionString"
-  description: string;
   tags?: string[];                 // タグ（例: ["required", "string", "int", "bool"]）
-  customFields?: Record<string, string>; // カスタムフィールド（ユーザーが追加したフィールド）
+  fields: Record<string, string>;  // フィールド（デフォルト: { "説明": "" }）
   modifiedAt: string;
 }
 
@@ -46,12 +45,15 @@ export interface FileSystemItem {
 
 export type ExportFormat = 'html' | 'markdown' | 'markdown-table';
 
+// デフォルトフィールド
+export const DEFAULT_FIELDS: Record<string, string> = { '説明': '' };
+
 // プロジェクト設定（project_settings.json）- チーム共有
 export interface ProjectSettings {
   projectName: string;
   configFiles: string[];           // 設定ファイルの相対パス配列
   availableTags?: string[];        // 利用可能なタグ（デフォルト: ['required', 'string', 'int', 'bool']）
-  customFields?: Record<string, string>; // プロジェクトのカスタムフィールド定義（キー: フィールド名、値: 空文字列）
+  fields?: Record<string, string>; // プロジェクトのフィールド定義（デフォルト: { "説明": "" }）
   export?: {
     fileName?: string;             // 出力ファイル名（拡張子なし、デフォルト: config-doc）
   };
