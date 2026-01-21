@@ -113,18 +113,24 @@ export function FileBrowser({
     }
   };
 
+  // パス区切り文字を正規化する（クロスプラットフォーム対応）
+  const normalizePath = (p: string): string => {
+    // バックスラッシュをスラッシュに統一
+    return p.replace(/\\/g, '/');
+  };
+
   // 現在のパスがルートパス（currentPath）より上かどうかをチェック
   const isAtOrAboveRoot = (targetPath: string): boolean => {
-    const normalizedTarget = targetPath.replace(/\//g, '\\').toLowerCase();
-    const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+    const normalizedTarget = normalizePath(targetPath).toLowerCase();
+    const normalizedRoot = normalizePath(currentPath).toLowerCase();
     // ターゲットがルートと同じか、ルートの親ディレクトリの場合はtrue
     return !normalizedRoot.startsWith(normalizedTarget) || normalizedTarget === normalizedRoot;
   };
 
   // 親ディレクトリへの移動が可能かどうか
   const canGoUp = (): boolean => {
-    const normalizedPath = path.replace(/\//g, '\\').toLowerCase();
-    const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+    const normalizedPath = normalizePath(path).toLowerCase();
+    const normalizedRoot = normalizePath(currentPath).toLowerCase();
     // 現在のパスがルートパスと同じなら上に移動できない
     return normalizedPath !== normalizedRoot;
   };
@@ -135,9 +141,9 @@ export function FileBrowser({
       return;
     }
 
-    // Windowsのパス区切り文字を考慮してパスを正規化
-    const normalizedPath = path.replace(/\//g, '\\');
-    const pathParts = normalizedPath.split('\\').filter(p => p);
+    // パスを正規化（スラッシュに統一）
+    const normalizedPath = normalizePath(path);
+    const pathParts = normalizedPath.split('/').filter(p => p);
 
     if (pathParts.length > 1) {
       // 親ディレクトリへ移動
@@ -146,33 +152,36 @@ export function FileBrowser({
       // パスを再構築
       let parentPath: string;
       if (parentParts.length === 1 && parentParts[0].includes(':')) {
-        // ドライブルートの場合（例: C:\ ）
-        parentPath = parentParts[0] + '\\';
+        // Windowsドライブルートの場合（例: C:/ ）
+        parentPath = parentParts[0] + '/';
       } else if (parentParts[0].includes(':')) {
-        // ドライブレターを含むパスの場合（例: C:\sksp）
-        parentPath = parentParts[0] + '\\' + parentParts.slice(1).join('\\');
+        // Windowsドライブレターを含むパスの場合（例: C:/sksp）
+        parentPath = parentParts[0] + '/' + parentParts.slice(1).join('/');
+      } else if (normalizedPath.startsWith('/')) {
+        // Unix絶対パスの場合（例: /tmp/foo）
+        parentPath = '/' + parentParts.join('/');
       } else {
         // 相対パスの場合
-        parentPath = parentParts.join('\\');
+        parentPath = parentParts.join('/');
       }
 
       // 親パスがルートパスより上なら移動しない
-      const normalizedParent = parentPath.replace(/\//g, '\\').toLowerCase();
-      const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
-      if (!normalizedParent.startsWith(normalizedRoot.split('\\').slice(0, -1).join('\\')) ||
-          normalizedRoot.startsWith(normalizedParent + '\\') ||
+      const normalizedParent = normalizePath(parentPath).toLowerCase();
+      const normalizedRoot = normalizePath(currentPath).toLowerCase();
+      if (!normalizedParent.startsWith(normalizedRoot.split('/').slice(0, -1).join('/')) ||
+          normalizedRoot.startsWith(normalizedParent + '/') ||
           normalizedRoot === normalizedParent) {
         setPath(parentPath);
       }
     } else if (pathParts.length === 1 && !pathParts[0].includes(':')) {
       // ルート以外の単一ディレクトリの場合
-      const normalizedRoot = currentPath.replace(/\//g, '\\').toLowerCase();
+      const normalizedRoot = normalizePath(currentPath).toLowerCase();
       if (normalizedRoot === '.') {
         return; // ルートが'.'なら上に移動しない
       }
       setPath('.');
     }
-    // ドライブルート（例: C:\）の場合は何もしない
+    // ドライブルート（例: C:/）やUnixルート（/）の場合は何もしない
     // ディレクトリ移動時は選択を保持
   };
 

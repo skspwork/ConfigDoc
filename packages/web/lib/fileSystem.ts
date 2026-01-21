@@ -140,9 +140,11 @@ export class FileSystemService {
   }
 
   async browseDirectory(dirPath: string): Promise<FileSystemItem[]> {
+    // バックスラッシュをスラッシュに正規化（クロスプラットフォーム対応）
+    const normalizedDirPath = dirPath.replace(/\\/g, '/');
     // 絶対パスか相対パスかを判定
-    const isAbsolute = path.isAbsolute(dirPath);
-    const fullPath = isAbsolute ? path.normalize(dirPath) : path.join(this.rootPath, dirPath);
+    const isAbsolute = path.isAbsolute(normalizedDirPath);
+    const fullPath = isAbsolute ? path.normalize(normalizedDirPath) : path.join(this.rootPath, normalizedDirPath);
 
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
 

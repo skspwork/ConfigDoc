@@ -50,13 +50,16 @@ test.describe('ファイル選択・読み込み', () => {
     const addButton = page.getByRole('button', { name: /ファイルを追加/ });
     await addButton.click();
 
+    // ダイアログが開くまで待つ
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
     // 上へボタン（ArrowUpIcon）- ルートでは「ルートディレクトリです」、サブディレクトリでは「上のディレクトリへ」
+    // どちらかが表示されるまで待つ
     const upButtonRoot = page.getByTitle('ルートディレクトリです');
     const upButtonSub = page.getByTitle('上のディレクトリへ');
-    // どちらかが表示されている
-    const rootCount = await upButtonRoot.count();
-    const subCount = await upButtonSub.count();
-    expect(rootCount + subCount).toBeGreaterThan(0);
+
+    // いずれかのボタンが表示されるまで待つ
+    await expect(upButtonRoot.or(upButtonSub)).toBeVisible();
   });
 
   test('FileBrowserダイアログの閉じるボタンでダイアログが閉じる', async ({ page }) => {
