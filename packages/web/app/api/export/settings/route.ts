@@ -58,7 +58,15 @@ export async function GET() {
 // POST: エクスポート設定を保存
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
     const settings: ExportSettings = body.settings;
 
     if (!settings || !settings.format) {

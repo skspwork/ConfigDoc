@@ -12,7 +12,12 @@ export async function POST(request: NextRequest) {
     const rootPath = getRootPath();
 
     // リクエストボディからフォーマットとファイル名を取得
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
     const { format = 'html', fileName = 'config-doc' } = body;
 
     // フォーマットに応じてジェネレーターを選択

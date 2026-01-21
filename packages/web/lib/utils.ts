@@ -27,17 +27,28 @@ export function escapeHtml(text: string): string {
 /**
  * ネストしたオブジェクトからプロパティパスで値を取得
  * @param obj 対象オブジェクト
- * @param propertyPath コロン区切りのプロパティパス（例: "Database:ConnectionString"）
+ * @param propertyPath コロン区切りのプロパティパス（例: "Database:ConnectionString" または "Servers[0]:Name"）
  * @returns 見つかった値、または undefined
  */
 export function getPropertyByPath(obj: unknown, propertyPath: string): unknown {
-  const keys = propertyPath.split(':');
+  // "Servers[0]:Name" -> ["Servers", "[0]", "Name"]
+  const keys = propertyPath.split(/(?=\[)|:/);
   let value: unknown = obj;
 
   for (const key of keys) {
-    if (value && typeof value === 'object' && key in value) {
+    if (value === undefined || value === null) return undefined;
+
+    if (key.startsWith('[') && key.endsWith(']')) {
+      // 配列インデックス
+      const index = parseInt(key.slice(1, -1), 10);
+      if (Array.isArray(value)) {
+        value = value[index];
+      } else {
+        return undefined;
+      }
+    } else if (key && typeof value === 'object' && key in value) {
       value = (value as Record<string, unknown>)[key];
-    } else {
+    } else if (key) {
       return undefined;
     }
   }

@@ -197,5 +197,123 @@ describe('ConfigParser', () => {
       const result = ConfigParser.buildTree({});
       expect(result).toEqual([]);
     });
+
+    describe('配列のオブジェクト要素展開', () => {
+      test('オブジェクト配列の要素を展開する', () => {
+        const config = {
+          Servers: [
+            { Name: 'Server1', Port: 8080 },
+            { Name: 'Server2', Port: 8081 }
+          ]
+        };
+        const tree = ConfigParser.buildTree(config);
+
+        expect(tree).toHaveLength(1);
+        expect(tree[0].key).toBe('Servers');
+        expect(tree[0].type).toBe('array');
+        expect(tree[0].children).toHaveLength(2);
+        expect(tree[0].children![0].key).toBe('[0]');
+        expect(tree[0].children![0].fullPath).toBe('Servers[0]');
+        expect(tree[0].children![0].type).toBe('object');
+        expect(tree[0].children![0].children).toHaveLength(2);
+        expect(tree[0].children![0].children![0].fullPath).toBe('Servers[0]:Name');
+        expect(tree[0].children![0].children![0].value).toBe('Server1');
+      });
+
+      test('プリミティブ配列は展開しない', () => {
+        const config = { Tags: ['tag1', 'tag2', 'tag3'] };
+        const tree = ConfigParser.buildTree(config);
+
+        expect(tree).toHaveLength(1);
+        expect(tree[0].key).toBe('Tags');
+        expect(tree[0].type).toBe('array');
+        expect(tree[0].children).toBeUndefined();
+      });
+
+      test('ネストした配列を処理する', () => {
+        const config = {
+          Databases: [{
+            ConnectionStrings: [{ Name: 'Main', Value: 'conn1' }]
+          }]
+        };
+        const tree = ConfigParser.buildTree(config);
+
+        expect(tree[0].fullPath).toBe('Databases');
+        expect(tree[0].children![0].fullPath).toBe('Databases[0]');
+        expect(tree[0].children![0].children![0].fullPath).toBe('Databases[0]:ConnectionStrings');
+        expect(tree[0].children![0].children![0].children![0].fullPath).toBe('Databases[0]:ConnectionStrings[0]');
+        expect(tree[0].children![0].children![0].children![0].children![0].fullPath).toBe('Databases[0]:ConnectionStrings[0]:Name');
+      });
+
+      test('空配列を処理する', () => {
+        const config = { Items: [] };
+        const tree = ConfigParser.buildTree(config);
+
+        expect(tree).toHaveLength(1);
+        expect(tree[0].key).toBe('Items');
+        expect(tree[0].type).toBe('array');
+        expect(tree[0].children).toBeUndefined();
+      });
+
+      test('混合配列（オブジェクトとプリミティブ）を処理する', () => {
+        const config = {
+          Mixed: [
+            { Name: 'Object' },
+            'string',
+            123,
+            { Value: 'Another' }
+          ]
+        };
+        const tree = ConfigParser.buildTree(config);
+
+        expect(tree[0].children).toHaveLength(2);
+        expect(tree[0].children![0].key).toBe('[0]');
+        expect(tree[0].children![0].fullPath).toBe('Mixed[0]');
+        expect(tree[0].children![1].key).toBe('[3]');
+        expect(tree[0].children![1].fullPath).toBe('Mixed[3]');
+      });
+    });
+  });
+
+  describe('flattenConfig - 配列のオブジェクト要素展開', () => {
+    test('オブジェクト配列の要素を展開する', () => {
+      const config = {
+        Servers: [
+          { Name: 'Server1', Port: 8080 },
+          { Name: 'Server2', Port: 8081 }
+        ]
+      };
+      const result = ConfigParser.flattenConfig(config);
+
+      expect(result).toEqual({
+        'Servers[0]:Name': 'Server1',
+        'Servers[0]:Port': 8080,
+        'Servers[1]:Name': 'Server2',
+        'Servers[1]:Port': 8081,
+      });
+    });
+
+    test('プリミティブ配列はそのまま保持する', () => {
+      const config = { Tags: ['tag1', 'tag2'] };
+      const result = ConfigParser.flattenConfig(config);
+
+      expect(result).toEqual({
+        Tags: ['tag1', 'tag2'],
+      });
+    });
+
+    test('ネストした配列を処理する', () => {
+      const config = {
+        Databases: [{
+          ConnectionStrings: [{ Name: 'Main', Value: 'conn1' }]
+        }]
+      };
+      const result = ConfigParser.flattenConfig(config);
+
+      expect(result).toEqual({
+        'Databases[0]:ConnectionStrings[0]:Name': 'Main',
+        'Databases[0]:ConnectionStrings[0]:Value': 'conn1',
+      });
+    });
   });
 });

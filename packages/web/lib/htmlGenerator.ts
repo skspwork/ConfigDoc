@@ -446,15 +446,57 @@ export class HtmlGenerator {
         const value = obj[key];
         const hasDoc = docs.properties && docs.properties[currentPath];
 
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          tree.push({
-            key,
-            path: currentPath,
-            value: value,
-            hasChildren: true,
-            hasDoc: !!hasDoc,
-            children: buildTree(value, currentPath, docs)
-          });
+        if (typeof value === 'object' && value !== null) {
+          if (Array.isArray(value)) {
+            // 配列の場合：オブジェクト要素があれば展開
+            const hasObjectElements = value.some(
+              item => item && typeof item === 'object' && !Array.isArray(item)
+            );
+            if (hasObjectElements) {
+              const children = [];
+              value.forEach((item, index) => {
+                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                  const elementPath = \`\${currentPath}[\${index}]\`;
+                  children.push({
+                    key: \`[\${index}]\`,
+                    path: elementPath,
+                    value: item,
+                    hasChildren: true,
+                    hasDoc: !!(docs.properties && docs.properties[elementPath]),
+                    children: buildTree(item, elementPath, docs)
+                  });
+                }
+              });
+              tree.push({
+                key,
+                path: currentPath,
+                value: value,
+                hasChildren: children.length > 0,
+                hasDoc: !!hasDoc,
+                children: children
+              });
+            } else {
+              // プリミティブ配列は展開しない
+              tree.push({
+                key,
+                path: currentPath,
+                value: value,
+                hasChildren: false,
+                hasDoc: !!hasDoc,
+                children: []
+              });
+            }
+          } else {
+            // オブジェクトの場合（既存ロジック）
+            tree.push({
+              key,
+              path: currentPath,
+              value: value,
+              hasChildren: true,
+              hasDoc: !!hasDoc,
+              children: buildTree(value, currentPath, docs)
+            });
+          }
         } else {
           tree.push({
             key,

@@ -118,6 +118,54 @@ describe('getPropertyByPath', () => {
     expect(getPropertyByPath('string', 'path')).toBeUndefined();
     expect(getPropertyByPath(123, 'path')).toBeUndefined();
   });
+
+  describe('配列インデックスのサポート', () => {
+    const arrayObj = {
+      Servers: [
+        { Name: 'Server1', Port: 8080 },
+        { Name: 'Server2', Port: 8081 }
+      ],
+      Nested: {
+        Items: [
+          { Value: 'first' },
+          { Value: 'second' }
+        ]
+      }
+    };
+
+    test('配列要素のプロパティを取得できる', () => {
+      expect(getPropertyByPath(arrayObj, 'Servers[0]:Name')).toBe('Server1');
+      expect(getPropertyByPath(arrayObj, 'Servers[1]:Port')).toBe(8081);
+    });
+
+    test('配列要素オブジェクトを取得できる', () => {
+      expect(getPropertyByPath(arrayObj, 'Servers[0]')).toEqual({ Name: 'Server1', Port: 8080 });
+    });
+
+    test('ネストした構造内の配列要素を取得できる', () => {
+      expect(getPropertyByPath(arrayObj, 'Nested:Items[0]:Value')).toBe('first');
+      expect(getPropertyByPath(arrayObj, 'Nested:Items[1]:Value')).toBe('second');
+    });
+
+    test('存在しないインデックスはundefinedを返す', () => {
+      expect(getPropertyByPath(arrayObj, 'Servers[10]:Name')).toBeUndefined();
+    });
+
+    test('配列でないものにインデックスを使うとundefinedを返す', () => {
+      expect(getPropertyByPath(arrayObj, 'Nested[0]')).toBeUndefined();
+    });
+
+    test('深くネストした配列を処理できる', () => {
+      const deepObj = {
+        Level1: [{
+          Level2: [{
+            Value: 'deep'
+          }]
+        }]
+      };
+      expect(getPropertyByPath(deepObj, 'Level1[0]:Level2[0]:Value')).toBe('deep');
+    });
+  });
 });
 
 describe('formatValue', () => {
