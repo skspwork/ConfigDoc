@@ -784,7 +784,10 @@ export default function Home() {
                         }
                         const updated = { ...editingDoc, fields: updatedEditingFields };
                         setEditingDoc(updated);
-                        setHasUnsavedChanges(false);
+
+                        // 更新後のoriginalDocと比較して変更を再チェック
+                        const updatedOriginal = originalDoc ? { ...originalDoc, fields: Object.fromEntries(newFieldKeys.map(key => [key, originalDoc.fields?.[key] || ''])) } : null;
+                        setHasUnsavedChanges(checkForChanges(updated, updatedOriginal));
                       }
                     }}
                   />
