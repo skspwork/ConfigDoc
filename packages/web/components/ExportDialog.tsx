@@ -107,13 +107,13 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
             </label>
             <input
               type="text"
-              value={settings.fileName || 'config-doc'}
+              value={settings.fileName ?? ''}
               onChange={(e) => setSettings({ ...settings, fileName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="config-doc"
             />
             <p className="mt-1 text-xs text-gray-500">
-              拡張子なしのファイル名を指定します（チーム共有設定）
+              拡張子なしのファイル名を指定します（空欄でconfig-doc、チーム共有設定）
             </p>
           </div>
 

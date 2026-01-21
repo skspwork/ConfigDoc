@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
     } catch {
       body = {};
     }
-    const { format = 'html', fileName = 'config-doc' } = body;
+    const { format = 'html' } = body;
+    // fileNameが空文字列の場合はデフォルト値を使用
+    const fileName = body.fileName?.trim() || 'config-doc';
     // outputDirが空文字列の場合はプロジェクトルートに出力
     const outputDir = body.outputDir?.trim() || '';
 
