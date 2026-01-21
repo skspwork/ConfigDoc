@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { PencilIcon, PlusIcon, XIcon, SaveIcon } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { PencilIcon, PlusIcon, XIcon, SaveIcon, GripVerticalIcon } from 'lucide-react';
 
 export interface EditingItem {
   originalName: string;
@@ -58,6 +58,23 @@ export function EditableListWrapper({
   const [editingItems, setEditingItems] = useState<EditingItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
 
+  // ドラッグ&ドロップ用の状態
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // ドラッグ中のプレビュー用に並び替えた配列を計算
+  const displayItems = useMemo(() => {
+    if (dragIndex === null || dragOverIndex === null || dragIndex === dragOverIndex) {
+      return editingItems.map((item, index) => ({ item, originalIndex: index }));
+    }
+
+    // ドラッグ中は見た目上の並び替えを表示
+    const result = editingItems.map((item, index) => ({ item, originalIndex: index }));
+    const [draggedItem] = result.splice(dragIndex, 1);
+    result.splice(dragOverIndex, 0, draggedItem);
+    return result;
+  }, [editingItems, dragIndex, dragOverIndex]);
+
   // 編集モードに入る
   const enterEditMode = () => {
     const itemList = items.map(name => ({
@@ -75,6 +92,8 @@ export function EditableListWrapper({
     setIsEditMode(false);
     setEditingItems([]);
     setNewItemName('');
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   // アイテムを追加（編集モード内）
@@ -91,15 +110,55 @@ export function EditableListWrapper({
   };
 
   // アイテムを削除（編集モード内）
-  const handleRemoveItem = (index: number) => {
-    setEditingItems(editingItems.filter((_, i) => i !== index));
+  const handleRemoveItem = (originalIndex: number) => {
+    setEditingItems(editingItems.filter((_, i) => i !== originalIndex));
   };
 
   // アイテム名を変更（編集モード内）
-  const handleNameChange = (index: number, newName: string) => {
+  const handleNameChange = (originalIndex: number, newName: string) => {
     setEditingItems(editingItems.map((item, i) =>
-      i === index ? { ...item, newName } : item
+      i === originalIndex ? { ...item, newName } : item
     ));
+  };
+
+  // ドラッグ開始
+  const handleDragStart = (originalIndex: number) => {
+    setDragIndex(originalIndex);
+  };
+
+  // ドラッグオーバー（表示上のインデックスで処理）
+  const handleDragOver = (e: React.DragEvent, displayIndex: number) => {
+    e.preventDefault();
+    if (dragIndex === null) return;
+
+    // 表示上のインデックスをそのまま使用
+    if (dragOverIndex !== displayIndex) {
+      setDragOverIndex(displayIndex);
+    }
+  };
+
+  // ドロップ時にデータを確定
+  const handleDrop = () => {
+    if (dragIndex === null || dragOverIndex === null || dragIndex === dragOverIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // 配列の並び替えを確定
+    const newItems = [...editingItems];
+    const [draggedItem] = newItems.splice(dragIndex, 1);
+    newItems.splice(dragOverIndex, 0, draggedItem);
+    setEditingItems(newItems);
+
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // ドラッグ終了（キャンセル時など）
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   // 保存処理
@@ -176,33 +235,53 @@ export function EditableListWrapper({
       {isEditMode ? (
         <div className="space-y-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
           <div className="text-xs font-medium text-blue-700 mb-2">
-            {editModeDescription}
+            {editModeDescription}（ドラッグで並び替え可能）
           </div>
 
           {/* 既存アイテムの編集 */}
           <div className="space-y-2">
-            {editingItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={item.newName}
-                  onChange={(e) => handleNameChange(index, e.target.value)}
-                  placeholder={inputPlaceholder}
-                  className={`flex-1 px-3 py-2 border-2 rounded-lg text-sm focus:ring-2 transition-all duration-200 ${
-                    !item.newName.trim()
-                      ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
-                      : 'border-gray-200 focus:border-blue-400 focus:ring-blue-200'
+            {displayItems.map(({ item, originalIndex }, displayIndex) => {
+              const isDragging = dragIndex === originalIndex;
+
+              return (
+                <div
+                  key={originalIndex}
+                  draggable
+                  onDragStart={() => handleDragStart(originalIndex)}
+                  onDragOver={(e) => handleDragOver(e, displayIndex)}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-2 transition-all ${
+                    isDragging ? 'opacity-50' : ''
                   }`}
-                />
-                <button
-                  onClick={() => handleRemoveItem(index)}
-                  className="text-gray-400 hover:text-red-600 transition-colors p-2"
-                  title={deleteButtonTitle}
                 >
-                  <XIcon className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+                  <div
+                    className="cursor-grab text-gray-400 hover:text-gray-600 p-1"
+                    title="ドラッグして並び替え"
+                  >
+                    <GripVerticalIcon className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={item.newName}
+                    onChange={(e) => handleNameChange(originalIndex, e.target.value)}
+                    placeholder={inputPlaceholder}
+                    className={`flex-1 px-3 py-2 border-2 rounded-lg text-sm focus:ring-2 transition-all duration-200 ${
+                      !item.newName.trim()
+                        ? 'border-red-300 focus:border-red-400 focus:ring-red-200'
+                        : 'border-gray-200 focus:border-blue-400 focus:ring-blue-200'
+                    }`}
+                  />
+                  <button
+                    onClick={() => handleRemoveItem(originalIndex)}
+                    className="text-gray-400 hover:text-red-600 transition-colors p-2"
+                    title={deleteButtonTitle}
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* 新規アイテム追加 */}
