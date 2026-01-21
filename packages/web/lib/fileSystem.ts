@@ -147,7 +147,6 @@ export class FileSystemService {
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
 
     return entries
-      .filter(entry => !entry.name.startsWith('.'))
       .map(entry => {
         // 絶対パスとして返す
         const absolutePath = path.join(fullPath, entry.name);
