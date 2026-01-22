@@ -34,7 +34,8 @@ export class MarkdownGenerator {
       markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
 
       // 設定ファイルから全プロパティを取得（オブジェクト型も含む）
-      const allPropertyPaths = ConfigParser.getAllPropertyPaths(configData).sort();
+      // ツリー構造の順序を保持するためソートしない
+      const allPropertyPaths = ConfigParser.getAllPropertyPaths(configData);
 
       if (allPropertyPaths.length === 0) {
         markdown += '*プロパティがありません。*\n\n';
