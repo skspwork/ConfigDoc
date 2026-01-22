@@ -1,6 +1,5 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
-import path from 'path';
 
 export class MarkdownGenerator {
   private rootPath: string;
@@ -48,11 +47,13 @@ export class MarkdownGenerator {
         }
 
         // フィールドを表示
-        Object.entries(doc.fields).forEach(([label, value]) => {
-          if (value) {
-            markdown += `**${label}:**\n\n${value}\n\n`;
-          }
-        });
+        if (doc.fields) {
+          Object.entries(doc.fields).forEach(([label, value]) => {
+            if (value) {
+              markdown += `**${label}:**\n\n${value}\n\n`;
+            }
+          });
+        }
 
         markdown += '---\n\n';
       }

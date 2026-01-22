@@ -42,11 +42,13 @@ export class MarkdownTableGenerator {
       // すべてのフィールドラベルを収集（説明以外）
       const fieldLabels = new Set<string>();
       propertyEntries.forEach(([_, doc]) => {
-        Object.keys(doc.fields).forEach(label => {
-          if (label !== '説明') {
-            fieldLabels.add(label);
-          }
-        });
+        if (doc.fields) {
+          Object.keys(doc.fields).forEach(label => {
+            if (label !== '説明') {
+              fieldLabels.add(label);
+            }
+          });
+        }
       });
       const sortedLabels = Array.from(fieldLabels).sort();
 
@@ -70,7 +72,7 @@ export class MarkdownTableGenerator {
           ? escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
           : '-';
 
-        const description = escapeTableCell(doc.fields['説明'] || '-');
+        const description = escapeTableCell((doc.fields && doc.fields['説明']) || '-');
         const value = this.getPropertyValue(configData, propertyPath);
         const valueStr = escapeTableCell(value);
 
@@ -78,7 +80,7 @@ export class MarkdownTableGenerator {
 
         // フィールドの値を追加（説明以外）
         sortedLabels.forEach(label => {
-          const fieldValue = doc.fields[label] || '-';
+          const fieldValue = (doc.fields && doc.fields[label]) || '-';
           markdown += ` ${escapeTableCell(fieldValue)} |`;
         });
 

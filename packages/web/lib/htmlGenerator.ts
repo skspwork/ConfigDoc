@@ -223,13 +223,15 @@ export class HtmlGenerator {
     }
 
     .config-tab {
-      padding: 10px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 10px 12px;
       background: #f9fafb;
       border: 1px solid #e5e7eb;
       border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s;
-      font-size: 0.9rem;
     }
 
     .config-tab:hover {
@@ -242,8 +244,26 @@ export class HtmlGenerator {
       border-color: #2563eb;
     }
 
+    .config-tab.active .config-tab-path {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
     .config-tab.hidden {
       display: none;
+    }
+
+    .config-tab-filename {
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .config-tab-path {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
     }
 
     .tree-container {
@@ -361,6 +381,20 @@ export class HtmlGenerator {
       margin-bottom: 20px;
       padding-bottom: 10px;
       border-bottom: 2px solid #e5e7eb;
+    }
+
+    .property-file {
+      font-size: 0.85rem;
+      color: #6b7280;
+      background: #f9fafb;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: help;
     }
 
     .property-path {
@@ -585,6 +619,7 @@ export class HtmlGenerator {
       const doc = config.docs.properties && config.docs.properties[node.path];
 
       let html = \`<h2>\${escapeHtml(node.key)}</h2>\`;
+      html += \`<div class="property-file" title="\${escapeHtml(config.filePath)}">ファイル: \${escapeHtml(config.filePath)}</div>\`;
       html += \`<div class="property-path">パス: \${escapeHtml(node.path)}</div>\`;
       html += \`<div class="property-value">値: \${escapeHtml(JSON.stringify(node.value, null, 2))}</div>\`;
 
@@ -645,7 +680,10 @@ export class HtmlGenerator {
         }
 
         tab.className = className;
-        tab.textContent = config.fileName;
+        tab.innerHTML = \`
+          <div class="config-tab-filename">\${escapeHtml(config.fileName)}</div>
+          <div class="config-tab-path" title="\${escapeHtml(config.filePath)}">\${escapeHtml(config.filePath)}</div>
+        \`;
         tab.addEventListener('click', () => {
           activeConfigIndex = index;
           renderConfigTabs(matchedConfigIndexes);
@@ -657,6 +695,7 @@ export class HtmlGenerator {
         });
         tabsEl.appendChild(tab);
       });
+
     }
 
     // 現在の設定を描画
