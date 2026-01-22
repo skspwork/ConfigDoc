@@ -119,14 +119,6 @@ export function FileBrowser({
     return p.replace(/\\/g, '/');
   };
 
-  // 現在のパスがルートパス（currentPath）より上かどうかをチェック
-  const isAtOrAboveRoot = (targetPath: string): boolean => {
-    const normalizedTarget = normalizePath(targetPath).toLowerCase();
-    const normalizedRoot = normalizePath(currentPath).toLowerCase();
-    // ターゲットがルートと同じか、ルートの親ディレクトリの場合はtrue
-    return !normalizedRoot.startsWith(normalizedTarget) || normalizedTarget === normalizedRoot;
-  };
-
   // 親ディレクトリへの移動が可能かどうか
   const canGoUp = (): boolean => {
     const normalizedPath = normalizePath(path).toLowerCase();
@@ -165,12 +157,11 @@ export function FileBrowser({
         parentPath = parentParts.join('/');
       }
 
-      // 親パスがルートパスより上なら移動しない
+      // 親パスがルートパスより上でなければ移動
       const normalizedParent = normalizePath(parentPath).toLowerCase();
       const normalizedRoot = normalizePath(currentPath).toLowerCase();
-      if (!normalizedParent.startsWith(normalizedRoot.split('/').slice(0, -1).join('/')) ||
-          normalizedRoot.startsWith(normalizedParent + '/') ||
-          normalizedRoot === normalizedParent) {
+      // 親パスがルートパスを含んでいれば（ルートパス以下であれば）移動可能
+      if (normalizedParent.startsWith(normalizedRoot) || normalizedParent === normalizedRoot) {
         setPath(parentPath);
       }
     } else if (pathParts.length === 1 && !pathParts[0].includes(':')) {

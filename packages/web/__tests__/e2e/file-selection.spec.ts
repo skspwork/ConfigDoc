@@ -285,6 +285,118 @@ test.describe('ファイル選択・読み込み', () => {
     }
   });
 
+  test('2階層以上深いフォルダから上階層ボタンで戻れる', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
+    // ダイアログコンテナを取得
+    const dialogContainer = page.locator('.bg-white.rounded-lg.shadow-xl');
+
+    // packagesディレクトリに移動（1階層目）
+    await page.waitForSelector('text=packages', { timeout: 5000 }).catch(() => null);
+    const packagesDir = dialogContainer.locator('text=packages').first();
+    const packagesCount = await packagesDir.count();
+
+    if (packagesCount > 0) {
+      await packagesDir.click();
+      await page.waitForTimeout(500);
+
+      // webディレクトリに移動（2階層目）
+      await page.waitForSelector('text=web', { timeout: 5000 }).catch(() => null);
+      const webDir = dialogContainer.locator('text=web').first();
+      const webCount = await webDir.count();
+
+      if (webCount > 0) {
+        await webDir.click();
+        await page.waitForTimeout(500);
+
+        // 現在2階層深い位置にいる
+        // 上へボタンが有効であることを確認
+        const upButton = page.getByTitle('上のディレクトリへ');
+        await expect(upButton).toBeEnabled();
+
+        // 1回目の上へ移動（packages/web → packages）
+        await upButton.click();
+        await page.waitForTimeout(500);
+
+        // まだ上へボタンが有効であることを確認（packagesディレクトリにいる）
+        const upButtonAfterFirst = page.getByTitle('上のディレクトリへ');
+        await expect(upButtonAfterFirst).toBeEnabled();
+
+        // 2回目の上へ移動（packages → ルート）
+        await upButtonAfterFirst.click();
+        await page.waitForTimeout(500);
+
+        // ルートに戻ると上へボタンが無効になる
+        const disabledUpButton = page.getByTitle('ルートディレクトリです');
+        await expect(disabledUpButton).toBeVisible();
+        await expect(disabledUpButton).toBeDisabled();
+      }
+    }
+  });
+
+  test('3階層以上深いフォルダから連続して上階層ボタンで戻れる', async ({ page }) => {
+    const addButton = page.getByRole('button', { name: /ファイルを追加/ });
+    await addButton.click();
+
+    // ダイアログが開く
+    await expect(page.getByRole('heading', { name: 'ファイルを選択' })).toBeVisible();
+
+    // ダイアログコンテナを取得
+    const dialogContainer = page.locator('.bg-white.rounded-lg.shadow-xl');
+
+    // packagesディレクトリに移動（1階層目）
+    await page.waitForSelector('text=packages', { timeout: 5000 }).catch(() => null);
+    const packagesDir = dialogContainer.locator('text=packages').first();
+    const packagesCount = await packagesDir.count();
+
+    if (packagesCount > 0) {
+      await packagesDir.click();
+      await page.waitForTimeout(500);
+
+      // webディレクトリに移動（2階層目）
+      await page.waitForSelector('text=web', { timeout: 5000 }).catch(() => null);
+      const webDir = dialogContainer.locator('text=web').first();
+      const webCount = await webDir.count();
+
+      if (webCount > 0) {
+        await webDir.click();
+        await page.waitForTimeout(500);
+
+        // componentsディレクトリに移動（3階層目）
+        await page.waitForSelector('text=components', { timeout: 5000 }).catch(() => null);
+        const componentsDir = dialogContainer.locator('text=components').first();
+        const componentsCount = await componentsDir.count();
+
+        if (componentsCount > 0) {
+          await componentsDir.click();
+          await page.waitForTimeout(500);
+
+          // 現在3階層深い位置にいる（packages/web/components）
+          // 上へボタンが有効であることを確認
+          let upButton = page.getByTitle('上のディレクトリへ');
+          await expect(upButton).toBeEnabled();
+
+          // 連続して3回上へ移動してルートまで戻る
+          for (let i = 0; i < 3; i++) {
+            upButton = page.getByTitle('上のディレクトリへ');
+            await expect(upButton).toBeEnabled();
+            await upButton.click();
+            await page.waitForTimeout(500);
+          }
+
+          // ルートに戻ると上へボタンが無効になる
+          const disabledUpButton = page.getByTitle('ルートディレクトリです');
+          await expect(disabledUpButton).toBeVisible();
+          await expect(disabledUpButton).toBeDisabled();
+        }
+      }
+    }
+  });
+
   test('ドット始まりのフォルダが表示される', async ({ page }) => {
     const addButton = page.getByRole('button', { name: /ファイルを追加/ });
     await addButton.click();
