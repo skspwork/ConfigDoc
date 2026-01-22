@@ -275,6 +275,115 @@ describe('ConfigParser', () => {
     });
   });
 
+  describe('getAllPropertyPaths', () => {
+    test('フラットなオブジェクトの全パスを取得する', () => {
+      const obj = { name: 'test', value: 123 };
+      const result = ConfigParser.getAllPropertyPaths(obj);
+      expect(result).toEqual(['name', 'value']);
+    });
+
+    test('ネストしたオブジェクトの全パスを取得する（親も含む）', () => {
+      const obj = {
+        Database: {
+          Host: 'localhost',
+          Port: 5432,
+        },
+      };
+      const result = ConfigParser.getAllPropertyPaths(obj);
+      expect(result).toEqual(['Database', 'Database:Host', 'Database:Port']);
+    });
+
+    test('深くネストしたオブジェクトの全パスを取得する', () => {
+      const obj = {
+        Level1: {
+          Level2: {
+            Level3: 'value',
+          },
+        },
+      };
+      const result = ConfigParser.getAllPropertyPaths(obj);
+      expect(result).toEqual(['Level1', 'Level1:Level2', 'Level1:Level2:Level3']);
+    });
+
+    test('配列を含むオブジェクトのパスを取得する', () => {
+      const obj = {
+        items: [1, 2, 3],
+      };
+      const result = ConfigParser.getAllPropertyPaths(obj);
+      expect(result).toEqual(['items']);
+    });
+
+    test('オブジェクト配列の全パスを取得する', () => {
+      const config = {
+        Servers: [
+          { Name: 'Server1', Port: 8080 },
+          { Name: 'Server2', Port: 8081 }
+        ]
+      };
+      const result = ConfigParser.getAllPropertyPaths(config);
+      expect(result).toEqual([
+        'Servers',
+        'Servers[0]',
+        'Servers[0]:Name',
+        'Servers[0]:Port',
+        'Servers[1]',
+        'Servers[1]:Name',
+        'Servers[1]:Port',
+      ]);
+    });
+
+    test('複雑なネスト構造の全パスを取得する', () => {
+      const obj = {
+        Logging: {
+          LogLevel: {
+            Default: 'Information',
+            Microsoft: 'Warning',
+          },
+        },
+        ConnectionStrings: {
+          DefaultConnection: 'Server=localhost',
+        },
+      };
+      const result = ConfigParser.getAllPropertyPaths(obj);
+      expect(result).toEqual([
+        'Logging',
+        'Logging:LogLevel',
+        'Logging:LogLevel:Default',
+        'Logging:LogLevel:Microsoft',
+        'ConnectionStrings',
+        'ConnectionStrings:DefaultConnection',
+      ]);
+    });
+
+    test('空のオブジェクトで空の配列を返す', () => {
+      const result = ConfigParser.getAllPropertyPaths({});
+      expect(result).toEqual([]);
+    });
+
+    test('プリミティブ配列はそのまま保持する', () => {
+      const config = { Tags: ['tag1', 'tag2'] };
+      const result = ConfigParser.getAllPropertyPaths(config);
+      expect(result).toEqual(['Tags']);
+    });
+
+    test('ネストした配列の全パスを取得する', () => {
+      const config = {
+        Databases: [{
+          ConnectionStrings: [{ Name: 'Main', Value: 'conn1' }]
+        }]
+      };
+      const result = ConfigParser.getAllPropertyPaths(config);
+      expect(result).toEqual([
+        'Databases',
+        'Databases[0]',
+        'Databases[0]:ConnectionStrings',
+        'Databases[0]:ConnectionStrings[0]',
+        'Databases[0]:ConnectionStrings[0]:Name',
+        'Databases[0]:ConnectionStrings[0]:Value',
+      ]);
+    });
+  });
+
   describe('flattenConfig - 配列のオブジェクト要素展開', () => {
     test('オブジェクト配列の要素を展開する', () => {
       const config = {

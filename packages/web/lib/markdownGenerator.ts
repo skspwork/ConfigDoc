@@ -1,5 +1,6 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
+import { ConfigParser } from './configParser';
 
 export class MarkdownGenerator {
   private rootPath: string;
@@ -27,32 +28,43 @@ export class MarkdownGenerator {
     for (const filePath of settings.configFiles) {
       const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
       const docs = await storageService.loadAllDocs(filePath);
+      const configData = await fsService.loadConfigFile(filePath);
 
       markdown += `## ${fileName}\n\n`;
       markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
 
-      const propertyEntries = Object.entries(docs.properties);
-      if (propertyEntries.length === 0) {
-        markdown += '*ドキュメントが登録されていません。*\n\n';
+      // 設定ファイルから全プロパティを取得（オブジェクト型も含む）
+      const allPropertyPaths = ConfigParser.getAllPropertyPaths(configData).sort();
+
+      if (allPropertyPaths.length === 0) {
+        markdown += '*プロパティがありません。*\n\n';
         continue;
       }
 
       markdown += '### プロパティ一覧\n\n';
 
-      for (const [propertyPath, doc] of propertyEntries) {
+      for (const propertyPath of allPropertyPaths) {
+        const doc = docs.properties[propertyPath];
+
         markdown += `#### \`${propertyPath}\`\n\n`;
 
-        if (doc.tags && doc.tags.length > 0) {
-          markdown += `**タグ:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
-        }
+        // ドキュメントがある場合
+        if (doc) {
+          if (doc.tags && doc.tags.length > 0) {
+            markdown += `**タグ:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
+          }
 
-        // フィールドを表示
-        if (doc.fields) {
-          Object.entries(doc.fields).forEach(([label, value]) => {
-            if (value) {
-              markdown += `**${label}:**\n\n${value}\n\n`;
-            }
-          });
+          // フィールドを表示
+          if (doc.fields) {
+            Object.entries(doc.fields).forEach(([label, value]) => {
+              if (value) {
+                markdown += `**${label}:**\n\n${value}\n\n`;
+              }
+            });
+          }
+        } else {
+          // ドキュメントがない場合
+          markdown += '*ドキュメントなし*\n\n';
         }
 
         markdown += '---\n\n';

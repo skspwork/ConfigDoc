@@ -39,6 +39,50 @@ export class ConfigParser {
     return result;
   }
 
+  /**
+   * オブジェクト型のプロパティも含めた全パスを取得
+   * （親オブジェクト、配列、末端の値すべて）
+   */
+  static getAllPropertyPaths(
+    obj: any,
+    prefix: string = ''
+  ): string[] {
+    const paths: string[] = [];
+
+    for (const key in obj) {
+      const fullPath = prefix ? `${prefix}:${key}` : key;
+      const value = obj[key];
+
+      // すべてのパスを追加（オブジェクトも含む）
+      paths.push(fullPath);
+
+      if (value && typeof value === 'object') {
+        if (Array.isArray(value)) {
+          // 配列の場合：オブジェクト要素があれば展開
+          const hasObjectElements = value.some(
+            item => item && typeof item === 'object' && !Array.isArray(item)
+          );
+          if (hasObjectElements) {
+            value.forEach((item, index) => {
+              if (item && typeof item === 'object' && !Array.isArray(item)) {
+                // 配列インデックスのパスを追加
+                const indexPath = `${fullPath}[${index}]`;
+                paths.push(indexPath);
+                // 再帰的に子要素のパスを追加
+                paths.push(...this.getAllPropertyPaths(item, indexPath));
+              }
+            });
+          }
+        } else {
+          // オブジェクトの場合：再帰的に子要素のパスを追加
+          paths.push(...this.getAllPropertyPaths(value, fullPath));
+        }
+      }
+    }
+
+    return paths;
+  }
+
   static buildTree(obj: any, prefix: string = ''): ConfigTreeNode[] {
     const nodes: ConfigTreeNode[] = [];
 

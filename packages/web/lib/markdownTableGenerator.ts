@@ -1,6 +1,7 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { escapeTableCell, getPropertyByPath, formatValue } from './utils';
+import { ConfigParser } from './configParser';
 
 export class MarkdownTableGenerator {
   private rootPath: string;
@@ -33,16 +34,19 @@ export class MarkdownTableGenerator {
       markdown += `## ${fileName}\n\n`;
       markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
 
-      const propertyEntries = Object.entries(docs.properties);
-      if (propertyEntries.length === 0) {
-        markdown += '*ドキュメントが登録されていません。*\n\n';
+      // 設定ファイルから全プロパティを取得（オブジェクト型も含む）
+      const allPropertyPaths = ConfigParser.getAllPropertyPaths(configData).sort();
+
+      if (allPropertyPaths.length === 0) {
+        markdown += '*プロパティがありません。*\n\n';
         continue;
       }
 
       // すべてのフィールドラベルを収集（説明以外）
       const fieldLabels = new Set<string>();
-      propertyEntries.forEach(([_, doc]) => {
-        if (doc.fields) {
+      allPropertyPaths.forEach(propertyPath => {
+        const doc = docs.properties[propertyPath];
+        if (doc && doc.fields) {
           Object.keys(doc.fields).forEach(label => {
             if (label !== '説明') {
               fieldLabels.add(label);
@@ -66,9 +70,10 @@ export class MarkdownTableGenerator {
       markdown += '\n';
 
       // 各プロパティの行を追加
-      for (const [propertyPath, doc] of propertyEntries) {
+      for (const propertyPath of allPropertyPaths) {
+        const doc = docs.properties[propertyPath];
         const propertyName = escapeTableCell(propertyPath);
-        const tags = doc.tags && doc.tags.length > 0
+        const tags = doc && doc.tags && doc.tags.length > 0
           ? escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
           : '-';
 
@@ -79,7 +84,7 @@ export class MarkdownTableGenerator {
 
         // フィールドの値を追加（説明以外）
         sortedLabels.forEach(label => {
-          const fieldValue = (doc.fields && doc.fields[label]) || '-';
+          const fieldValue = (doc && doc.fields && doc.fields[label]) || '-';
           markdown += ` ${escapeTableCell(fieldValue)} |`;
         });
 
