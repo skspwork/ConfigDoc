@@ -59,7 +59,7 @@ export class MarkdownGenerator {
       }
     }
 
-    markdown += `\n*このドキュメントは [ConfigDoc](https://github.com/your-repo/configdoc) により自動生成されました。*\n`;
+    markdown += `\n*このドキュメントは ConfigDoc により自動生成されました。*\n`;
 
     return markdown;
   }

@@ -53,13 +53,13 @@ export class MarkdownTableGenerator {
       const sortedLabels = Array.from(fieldLabels).sort();
 
       // テーブルヘッダー
-      markdown += '| プロパティ名 | タグ | 説明 | 値 |';
+      markdown += '| プロパティ名 | タグ | 値 |';
       sortedLabels.forEach(label => {
         markdown += ` ${label} |`;
       });
       markdown += '\n';
 
-      markdown += '|-------------|------|------|-----|';
+      markdown += '|-------------|------|-----|';
       sortedLabels.forEach(() => {
         markdown += '------|';
       });
@@ -72,11 +72,10 @@ export class MarkdownTableGenerator {
           ? escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
           : '-';
 
-        const description = escapeTableCell((doc.fields && doc.fields['説明']) || '-');
         const value = this.getPropertyValue(configData, propertyPath);
         const valueStr = escapeTableCell(value);
 
-        markdown += `| ${propertyName} | ${tags} | ${description} | ${valueStr} |`;
+        markdown += `| ${propertyName} | ${tags} | ${valueStr} |`;
 
         // フィールドの値を追加（説明以外）
         sortedLabels.forEach(label => {
@@ -90,7 +89,7 @@ export class MarkdownTableGenerator {
       markdown += '\n';
     }
 
-    markdown += `\n*このドキュメントは [ConfigDoc](https://github.com/your-repo/configdoc) により自動生成されました。*\n`;
+    markdown += `\n*このドキュメントは ConfigDoc により自動生成されました。*\n`;
 
     return markdown;
   }
