@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { ConfigDocs, PropertyDoc, ExportSettings, DEFAULT_FIELDS } from '@/types';
 import { LoadedConfig } from '@/components/ConfigFileTabs';
 import { ToastType } from '@/components/Toast';
+import {
+  sortTagsByOrder,
+  reorderFields,
+  detectTagChanges,
+  detectFieldChanges
+} from '@/lib/configManagerUtils';
 
 interface Toast {
   id: string;
@@ -89,18 +95,12 @@ export function useConfigManager(): UseConfigManagerReturn {
     // タグの比較
     const currentTags = current.tags || [];
     const originalTags = original.tags || [];
-    if (currentTags.length !== originalTags.length) return true;
-    if (currentTags.some((tag, index) => tag !== originalTags[index])) return true;
+    if (detectTagChanges(originalTags, currentTags)) return true;
 
     // フィールドの比較
     const currentFields = current.fields || {};
     const originalFields = original.fields || {};
-    const allKeys = new Set([...Object.keys(currentFields), ...Object.keys(originalFields)]);
-    for (const key of allKeys) {
-      const currentValue = currentFields[key] || '';
-      const originalValue = originalFields[key] || '';
-      if (currentValue !== originalValue) return true;
-    }
+    if (detectFieldChanges(originalFields, currentFields)) return true;
 
     return false;
   }, []);
@@ -456,6 +456,8 @@ export function useConfigManager(): UseConfigManagerReturn {
   // 利用可能なタグを更新
   const handleAvailableTagsChange = useCallback(async (tags: string[]) => {
     const removedTags = availableTags.filter(tag => !tags.includes(tag));
+    const oldTagOrder = availableTags;
+    const newTagOrder = tags;
 
     setAvailableTags(tags);
     await fetch('/api/config/metadata', {
@@ -464,15 +466,28 @@ export function useConfigManager(): UseConfigManagerReturn {
       body: JSON.stringify({ availableTags: tags })
     });
 
-    if (removedTags.length > 0) {
+    // タグの削除または順序変更がある場合、すべてのドキュメントを更新
+    const hasRemovedTags = removedTags.length > 0;
+    const hasOrderChanged = oldTagOrder.some((tag, idx) => tag !== newTagOrder[idx]) ||
+                           oldTagOrder.length !== newTagOrder.length;
+
+    if (hasRemovedTags || hasOrderChanged) {
       for (const config of loadedConfigs) {
         let hasChanges = false;
         const updatedProperties = { ...config.docs.properties };
 
         for (const [propPath, doc] of Object.entries(updatedProperties)) {
           if (doc.tags && doc.tags.length > 0) {
-            const updatedTags = doc.tags.filter(tag => !removedTags.includes(tag));
-            if (updatedTags.length !== doc.tags.length) {
+            // 削除されたタグを除外
+            const filteredTags = doc.tags.filter(tag => !removedTags.includes(tag));
+
+            // availableTagsの順序でソート
+            const updatedTags = sortTagsByOrder(filteredTags, newTagOrder);
+
+            // タグの内容または順序が変わったかチェック
+            const tagsChanged = detectTagChanges(doc.tags, updatedTags);
+
+            if (tagsChanged) {
               updatedProperties[propPath] = { ...doc, tags: updatedTags };
               hasChanges = true;
             }
@@ -497,13 +512,20 @@ export function useConfigManager(): UseConfigManagerReturn {
         }
       }
 
-      if (editingDoc && editingDoc.tags) {
-        const updatedEditingTags = editingDoc.tags.filter(tag => !removedTags.includes(tag));
-        if (updatedEditingTags.length !== editingDoc.tags.length) {
+      // 編集中のドキュメントも更新
+      if (editingDoc && editingDoc.tags && editingDoc.tags.length > 0) {
+        const filteredEditingTags = editingDoc.tags.filter(tag => !removedTags.includes(tag));
+        const updatedEditingTags = sortTagsByOrder(filteredEditingTags, newTagOrder);
+
+        const tagsChanged = detectTagChanges(editingDoc.tags, updatedEditingTags);
+
+        if (tagsChanged) {
           const updated = { ...editingDoc, tags: updatedEditingTags };
           setEditingDoc(updated);
-          if (originalDoc) {
-            const updatedOriginalTags = (originalDoc.tags || []).filter(tag => !removedTags.includes(tag));
+
+          if (originalDoc && originalDoc.tags) {
+            const filteredOriginalTags = originalDoc.tags.filter(tag => !removedTags.includes(tag));
+            const updatedOriginalTags = sortTagsByOrder(filteredOriginalTags, newTagOrder);
             setOriginalDoc({ ...originalDoc, tags: updatedOriginalTags });
           }
         }
@@ -524,46 +546,44 @@ export function useConfigManager(): UseConfigManagerReturn {
       body: JSON.stringify({ fields })
     });
 
-    if (removedFields.length > 0) {
-      for (const config of loadedConfigs) {
-        let hasChanges = false;
-        const updatedProperties = { ...config.docs.properties };
+    // すべての設定ファイルのドキュメントを更新
+    // フィールドの削除または順序変更に対応
+    for (const config of loadedConfigs) {
+      let hasChanges = false;
+      const updatedProperties = { ...config.docs.properties };
 
-        for (const [propPath, doc] of Object.entries(updatedProperties)) {
-          if (doc.fields) {
-            const updatedFields = { ...doc.fields };
-            let fieldRemoved = false;
+      for (const [propPath, doc] of Object.entries(updatedProperties)) {
+        if (doc.fields) {
+          // 新しいフィールド定義の順序で再構築
+          const reorderedDocFields = reorderFields(doc.fields, newFieldKeys);
 
-            for (const removedField of removedFields) {
-              if (removedField in updatedFields) {
-                delete updatedFields[removedField];
-                fieldRemoved = true;
-              }
-            }
+          // 順序が変わったか、削除されたフィールドがあるかチェック
+          const oldKeys = Object.keys(doc.fields);
+          const orderChanged = oldKeys.some((key, idx) => key !== newFieldKeys[idx]);
+          const hasRemovedFields = removedFields.some(field => field in doc.fields);
 
-            if (fieldRemoved) {
-              updatedProperties[propPath] = { ...doc, fields: updatedFields };
-              hasChanges = true;
-            }
+          if (orderChanged || hasRemovedFields || oldKeys.length !== newFieldKeys.length) {
+            updatedProperties[propPath] = { ...doc, fields: reorderedDocFields };
+            hasChanges = true;
           }
         }
+      }
 
-        if (hasChanges) {
-          await fetch('/api/config/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              configFilePath: config.filePath,
-              properties: updatedProperties
-            })
-          });
+      if (hasChanges) {
+        await fetch('/api/config/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            configFilePath: config.filePath,
+            properties: updatedProperties
+          })
+        });
 
-          setLoadedConfigs(prev => prev.map(c =>
-            c.filePath === config.filePath
-              ? { ...c, docs: { ...c.docs, properties: updatedProperties } }
-              : c
-          ));
-        }
+        setLoadedConfigs(prev => prev.map(c =>
+          c.filePath === config.filePath
+            ? { ...c, docs: { ...c.docs, properties: updatedProperties } }
+            : c
+        ));
       }
     }
 

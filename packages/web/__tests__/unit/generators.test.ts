@@ -47,7 +47,8 @@ describe('Generator Snapshot Tests', () => {
     const projectSettings = {
       projectName: 'Test Project',
       configFiles: ['appsettings.json'],
-      export: { fileName: 'config-doc' }
+      fields: { "説明": "" },
+      export: { fileName: 'config-doc' },
     };
 
     fs.writeFileSync(

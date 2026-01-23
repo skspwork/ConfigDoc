@@ -1,6 +1,7 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { ConfigParser } from './configParser';
+import { sortTagsByOrder } from './configManagerUtils';
 
 export class MarkdownGenerator {
   private rootPath: string;
@@ -18,6 +19,12 @@ export class MarkdownGenerator {
     if (!settings || settings.configFiles.length === 0) {
       return '# 設定ファイルドキュメント\n\nドキュメント化された設定ファイルがありません。\n';
     }
+
+    // フィールドの順序を取得
+    const fieldKeys = settings.fields ? Object.keys(settings.fields) : [];
+
+    // タグの順序を取得
+    const availableTags = settings.availableTags || [];
 
     let markdown = '# 設定ファイルドキュメント\n\n';
     markdown += `プロジェクト: **${settings.projectName}**\n\n`;
@@ -52,16 +59,18 @@ export class MarkdownGenerator {
         // ドキュメントがある場合
         if (doc) {
           if (doc.tags && doc.tags.length > 0) {
-            markdown += `**タグ:** ${doc.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
+            const sortedTags = sortTagsByOrder(doc.tags, availableTags);
+            markdown += `**タグ:** ${sortedTags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
           }
 
-          // フィールドを表示
+          // フィールドをprojectFieldsの順序で表示
           if (doc.fields) {
-            Object.entries(doc.fields).forEach(([label, value]) => {
+            for (const fieldKey of fieldKeys) {
+              const value = doc.fields[fieldKey];
               if (value) {
-                markdown += `**${label}:**\n\n${value}\n\n`;
+                markdown += `**${fieldKey}:**\n\n${value}\n\n`;
               }
-            });
+            }
           }
         } else {
           // ドキュメントがない場合

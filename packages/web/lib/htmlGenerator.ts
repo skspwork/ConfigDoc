@@ -2,6 +2,7 @@ import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { escapeHtml } from './utils';
 import { ProjectConfigFiles, ConfigDocs } from '@/types';
+import { sortTagsByOrder } from './configManagerUtils';
 
 interface ConfigWithDocs {
   filePath: string;
@@ -25,6 +26,12 @@ export class HtmlGenerator {
     if (!settings || !settings.configFiles || settings.configFiles.length === 0) {
       return this.generateEmptyHtml();
     }
+
+    // フィールドの順序を取得
+    const fieldKeys = settings.fields ? Object.keys(settings.fields) : [];
+
+    // タグの順序を取得
+    const availableTags = settings.availableTags || [];
 
     // 各設定ファイルとそのドキュメントを読み込む
     const configs: ConfigWithDocs[] = [];
@@ -59,7 +66,7 @@ export class HtmlGenerator {
       configFiles: []
     };
 
-    return this.generateFullHtml(metadata, configs);
+    return this.generateFullHtml(metadata, configs, fieldKeys, availableTags);
   }
 
   private generateEmptyHtml(): string {
@@ -85,8 +92,10 @@ export class HtmlGenerator {
 </html>`;
   }
 
-  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[]): string {
+  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[], fieldKeys: string[], availableTags: string[]): string {
     const configsJson = JSON.stringify(configs, null, 2);
+    const fieldKeysJson = JSON.stringify(fieldKeys);
+    const availableTagsJson = JSON.stringify(availableTags);
 
     return `<!DOCTYPE html>
 <html lang="ja">
@@ -123,9 +132,24 @@ export class HtmlGenerator {
 
   <script>
     const configs = ${configsJson};
+    const fieldKeys = ${fieldKeysJson};
+    const availableTags = ${availableTagsJson};
     let activeConfigIndex = 0;
     let selectedPath = '';
     let currentSearchQuery = '';
+
+    // タグをavailableTagsの順序でソート
+    function sortTagsByOrder(tags) {
+      if (!tags || tags.length === 0) return [];
+      return [...tags].sort((a, b) => {
+        const indexA = availableTags.indexOf(a);
+        const indexB = availableTags.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return 0;
+      });
+    }
 
     ${this.getScripts()}
   </script>
@@ -625,18 +649,20 @@ export class HtmlGenerator {
 
       if (doc) {
         if (doc.tags && doc.tags.length > 0) {
+          const sortedTags = sortTagsByOrder(doc.tags);
           html += \`<div class="doc-section">
             <h3>タグ</h3>
             <div class="tag-list">\`;
-          doc.tags.forEach(tag => {
+          sortedTags.forEach(tag => {
             html += \`<span class="tag">\${escapeHtml(tag)}</span>\`;
           });
           html += \`</div>
           </div>\`;
         }
 
-        // フィールドを表示
-        Object.entries(doc.fields).forEach(([label, value]) => {
+        // フィールドをprojectFieldsの順序で表示
+        fieldKeys.forEach(label => {
+          const value = doc.fields[label];
           if (value) {
             html += \`<div class="doc-section">
               <h3>\${escapeHtml(label)}</h3>

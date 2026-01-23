@@ -2,6 +2,7 @@ import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { escapeTableCell, getPropertyByPath, formatValue } from './utils';
 import { ConfigParser } from './configParser';
+import { sortTagsByOrder } from './configManagerUtils';
 
 export class MarkdownTableGenerator {
   private rootPath: string;
@@ -19,6 +20,13 @@ export class MarkdownTableGenerator {
     if (!settings || settings.configFiles.length === 0) {
       return '# 設定ファイルドキュメント\n\nドキュメント化された設定ファイルがありません。\n';
     }
+
+    // フィールドの順序を取得（「説明」以外をテーブルの列として使用）
+    const fieldKeys = settings.fields ? Object.keys(settings.fields) : [];
+    const nonDescriptionFields = fieldKeys.filter(key => key !== '説明');
+
+    // タグの順序を取得
+    const availableTags = settings.availableTags || [];
 
     let markdown = '# 設定ファイルドキュメント\n\n';
     markdown += `プロジェクト: **${settings.projectName}**\n\n`;
@@ -43,29 +51,15 @@ export class MarkdownTableGenerator {
         continue;
       }
 
-      // すべてのフィールドラベルを収集（説明以外）
-      const fieldLabels = new Set<string>();
-      allPropertyPaths.forEach(propertyPath => {
-        const doc = docs.properties[propertyPath];
-        if (doc && doc.fields) {
-          Object.keys(doc.fields).forEach(label => {
-            if (label !== '説明') {
-              fieldLabels.add(label);
-            }
-          });
-        }
-      });
-      const sortedLabels = Array.from(fieldLabels).sort();
-
-      // テーブルヘッダー
+      // テーブルヘッダー（projectFieldsの順序で表示）
       markdown += '| プロパティ名 | タグ | 値 |';
-      sortedLabels.forEach(label => {
+      nonDescriptionFields.forEach(label => {
         markdown += ` ${label} |`;
       });
       markdown += '\n';
 
       markdown += '|-------------|------|-----|';
-      sortedLabels.forEach(() => {
+      nonDescriptionFields.forEach(() => {
         markdown += '------|';
       });
       markdown += '\n';
@@ -74,8 +68,11 @@ export class MarkdownTableGenerator {
       for (const propertyPath of allPropertyPaths) {
         const doc = docs.properties[propertyPath];
         const propertyName = escapeTableCell(propertyPath);
-        const tags = doc && doc.tags && doc.tags.length > 0
-          ? escapeTableCell(doc.tags.map(tag => `\`${tag}\``).join(', '))
+        const sortedTags = doc && doc.tags && doc.tags.length > 0
+          ? sortTagsByOrder(doc.tags, availableTags)
+          : [];
+        const tags = sortedTags.length > 0
+          ? escapeTableCell(sortedTags.map(tag => `\`${tag}\``).join(', '))
           : '-';
 
         const value = this.getPropertyValue(configData, propertyPath);
@@ -83,8 +80,8 @@ export class MarkdownTableGenerator {
 
         markdown += `| ${propertyName} | ${tags} | ${valueStr} |`;
 
-        // フィールドの値を追加（説明以外）
-        sortedLabels.forEach(label => {
+        // フィールドの値をprojectFieldsの順序で追加（説明以外）
+        nonDescriptionFields.forEach(label => {
           const fieldValue = (doc && doc.fields && doc.fields[label]) || '-';
           markdown += ` ${escapeTableCell(fieldValue)} |`;
         });
