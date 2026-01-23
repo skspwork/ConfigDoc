@@ -21,9 +21,8 @@ export class MarkdownTableGenerator {
       return '# 設定ファイルドキュメント\n\nドキュメント化された設定ファイルがありません。\n';
     }
 
-    // フィールドの順序を取得（「説明」以外をテーブルの列として使用）
+    // フィールドの順序を取得（すべてのフィールドをテーブルの列として使用）
     const fieldKeys = settings.fields ? Object.keys(settings.fields) : [];
-    const nonDescriptionFields = fieldKeys.filter(key => key !== '説明');
 
     // タグの順序を取得
     const availableTags = settings.availableTags || [];
@@ -53,13 +52,13 @@ export class MarkdownTableGenerator {
 
       // テーブルヘッダー（projectFieldsの順序で表示）
       markdown += '| プロパティ名 | タグ | 値 |';
-      nonDescriptionFields.forEach(label => {
+      fieldKeys.forEach(label => {
         markdown += ` ${label} |`;
       });
       markdown += '\n';
 
       markdown += '|-------------|------|-----|';
-      nonDescriptionFields.forEach(() => {
+      fieldKeys.forEach(() => {
         markdown += '------|';
       });
       markdown += '\n';
@@ -80,8 +79,8 @@ export class MarkdownTableGenerator {
 
         markdown += `| ${propertyName} | ${tags} | ${valueStr} |`;
 
-        // フィールドの値をprojectFieldsの順序で追加（説明以外）
-        nonDescriptionFields.forEach(label => {
+        // フィールドの値をprojectFieldsの順序で追加
+        fieldKeys.forEach(label => {
           const fieldValue = (doc && doc.fields && doc.fields[label]) || '-';
           markdown += ` ${escapeTableCell(fieldValue)} |`;
         });

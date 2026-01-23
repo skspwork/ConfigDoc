@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Generator Snapshot Tests > HtmlGenerator - スナップショット 1`] = `
+exports[`HtmlGenerator > generates HTML with correct format 1`] = `
 "<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -446,8 +446,8 @@ exports[`Generator Snapshot Tests > HtmlGenerator - スナップショット 1`]
     }
   }
 ];
-    const fieldKeys = ["説明"];
-    const availableTags = [];
+    const fieldKeys = ["説明","例"];
+    const availableTags = ["重要","注意"];
     let activeConfigIndex = 0;
     let selectedPath = '';
     let currentSearchQuery = '';
@@ -830,162 +830,4 @@ exports[`Generator Snapshot Tests > HtmlGenerator - スナップショット 1`]
   </script>
 </body>
 </html>"
-`;
-
-exports[`Generator Snapshot Tests > MarkdownGenerator - スナップショット 1`] = `
-"# 設定ファイルドキュメント
-
-プロジェクト: **Test Project**
-
-最終更新: 2026/1/22 0:00:00
-
----
-
-## appsettings.json
-
-**ファイルパス:** \`appsettings.json\`
-
-### プロパティ一覧
-
-#### \`Database\`
-
-**説明:**
-
-データベース設定
-
----
-
-#### \`Database:Host\`
-
-**説明:**
-
-データベースホスト名
-
----
-
-#### \`Database:Port\`
-
-*ドキュメントなし*
-
----
-
-#### \`Database:ConnectionString\`
-
-*ドキュメントなし*
-
----
-
-#### \`Logging\`
-
-*ドキュメントなし*
-
----
-
-#### \`Logging:LogLevel\`
-
-*ドキュメントなし*
-
----
-
-#### \`Logging:LogLevel:Default\`
-
-**タグ:** \`重要\`
-
-**説明:**
-
-デフォルトログレベル
-
----
-
-#### \`Logging:LogLevel:Microsoft\`
-
-*ドキュメントなし*
-
----
-
-#### \`Features\`
-
-*ドキュメントなし*
-
----
-
-#### \`Features[0]\`
-
-**説明:**
-
-最初の機能
-
----
-
-#### \`Features[0]:Name\`
-
-**説明:**
-
-機能名
-
----
-
-#### \`Features[0]:Enabled\`
-
-*ドキュメントなし*
-
----
-
-#### \`Features[1]\`
-
-*ドキュメントなし*
-
----
-
-#### \`Features[1]:Name\`
-
-*ドキュメントなし*
-
----
-
-#### \`Features[1]:Enabled\`
-
-*ドキュメントなし*
-
----
-
-
-*このドキュメントは ConfigDoc により自動生成されました。*
-"
-`;
-
-exports[`Generator Snapshot Tests > MarkdownTableGenerator - スナップショット 1`] = `
-"# 設定ファイルドキュメント
-
-プロジェクト: **Test Project**
-
-最終更新: 2026/1/22 0:00:00
-
----
-
-## appsettings.json
-
-**ファイルパス:** \`appsettings.json\`
-
-| プロパティ名 | タグ | 値 |
-|-------------|------|-----|
-| Database | - | {"Host":"localhost","Port":5432,"ConnectionString":"Server=localhost;Database=test"} |
-| Database:Host | - | localhost |
-| Database:Port | - | 5432 |
-| Database:ConnectionString | - | Server=localhost;Database=test |
-| Logging | - | {"LogLevel":{"Default":"Information","Microsoft":"Warning"}} |
-| Logging:LogLevel | - | {"Default":"Information","Microsoft":"Warning"} |
-| Logging:LogLevel:Default | \`重要\` | Information |
-| Logging:LogLevel:Microsoft | - | Warning |
-| Features | - | [{"Name":"Feature1","Enabled":true},{"Name":"Feature2","Enabled":false}] |
-| Features[0] | - | {"Name":"Feature1","Enabled":true} |
-| Features[0]:Name | - | Feature1 |
-| Features[0]:Enabled | - | true |
-| Features[1] | - | {"Name":"Feature2","Enabled":false} |
-| Features[1]:Name | - | Feature2 |
-| Features[1]:Enabled | - | false |
-
-
-*このドキュメントは ConfigDoc により自動生成されました。*
-"
 `;

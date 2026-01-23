@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MarkdownTableGenerator > generates markdown table with correct format 1`] = `
+"# 設定ファイルドキュメント
+
+プロジェクト: **Test Project**
+
+最終更新: 2026/1/22 0:00:00
+
+---
+
+## appsettings.json
+
+**ファイルパス:** \`appsettings.json\`
+
+| プロパティ名 | タグ | 値 | 説明 | 例 |
+|-------------|------|-----|------|------|
+| Database | - | {"Host":"localhost","Port":5432,"ConnectionString":"Server=localhost;Database=test"} | データベース設定 | - |
+| Database:Host | - | localhost | データベースホスト名 | - |
+| Database:Port | - | 5432 | - | - |
+| Database:ConnectionString | - | Server=localhost;Database=test | - | - |
+| Logging | - | {"LogLevel":{"Default":"Information","Microsoft":"Warning"}} | - | - |
+| Logging:LogLevel | - | {"Default":"Information","Microsoft":"Warning"} | - | - |
+| Logging:LogLevel:Default | \`重要\` | Information | デフォルトログレベル | - |
+| Logging:LogLevel:Microsoft | - | Warning | - | - |
+| Features | - | [{"Name":"Feature1","Enabled":true},{"Name":"Feature2","Enabled":false}] | - | - |
+| Features[0] | - | {"Name":"Feature1","Enabled":true} | 最初の機能 | - |
+| Features[0]:Name | - | Feature1 | 機能名 | - |
+| Features[0]:Enabled | - | true | - | - |
+| Features[1] | - | {"Name":"Feature2","Enabled":false} | - | - |
+| Features[1]:Name | - | Feature2 | - | - |
+| Features[1]:Enabled | - | false | - | - |
+
+
+*このドキュメントは ConfigDoc により自動生成されました。*
+"
+`;

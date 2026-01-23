@@ -1,0 +1,123 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
+"# 設定ファイルドキュメント
+
+プロジェクト: **Test Project**
+
+最終更新: 2026/1/22 0:00:00
+
+---
+
+## appsettings.json
+
+**ファイルパス:** \`appsettings.json\`
+
+### プロパティ一覧
+
+#### \`Database\`
+
+**説明:**
+
+データベース設定
+
+---
+
+#### \`Database:Host\`
+
+**説明:**
+
+データベースホスト名
+
+---
+
+#### \`Database:Port\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Database:ConnectionString\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Logging\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Logging:LogLevel\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Logging:LogLevel:Default\`
+
+**タグ:** \`重要\`
+
+**説明:**
+
+デフォルトログレベル
+
+---
+
+#### \`Logging:LogLevel:Microsoft\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Features\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Features[0]\`
+
+**説明:**
+
+最初の機能
+
+---
+
+#### \`Features[0]:Name\`
+
+**説明:**
+
+機能名
+
+---
+
+#### \`Features[0]:Enabled\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Features[1]\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Features[1]:Name\`
+
+*ドキュメントなし*
+
+---
+
+#### \`Features[1]:Enabled\`
+
+*ドキュメントなし*
+
+---
+
+
+*このドキュメントは ConfigDoc により自動生成されました。*
+"
+`;
