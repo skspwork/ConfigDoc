@@ -58,15 +58,32 @@ export function getPropertyByPath(obj: unknown, propertyPath: string): unknown {
 
 /**
  * 値を表示用の文字列に変換
+ * プリミティブ値とプリミティブ配列のみ表示し、オブジェクトとオブジェクト配列は'-'を返す
  */
 export function formatValue(value: unknown): string {
   if (value === null || value === undefined) {
     return '-';
   }
 
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
+  const valueType = typeof value;
+  const isArray = Array.isArray(value);
+  const isObject = valueType === 'object' && !isArray;
+
+  if (isArray) {
+    // 配列の場合：要素がプリミティブならば表示
+    const hasPrimitiveElements = value.length > 0 && value.every((item: any) =>
+      typeof item !== 'object' || item === null
+    );
+    if (hasPrimitiveElements) {
+      return JSON.stringify(value);
+    }
+    // オブジェクト配列の場合は表示しない
+    return '-';
+  } else if (isObject) {
+    // オブジェクトの場合は表示しない
+    return '-';
   }
 
+  // プリミティブ値を表示
   return String(value);
 }

@@ -15,19 +15,20 @@ exports[`MarkdownTableGenerator > generates markdown table with correct format 1
 
 | プロパティ名 | タグ | 値 | 説明 | 例 |
 |-------------|------|-----|------|------|
-| Database | - | {"Host":"localhost","Port":5432,"ConnectionString":"Server=localhost;Database=test"} | データベース設定 | - |
+| Database | - | - | データベース設定 | - |
 | Database:Host | - | localhost | データベースホスト名 | - |
 | Database:Port | - | 5432 | - | - |
 | Database:ConnectionString | - | Server=localhost;Database=test | - | - |
-| Logging | - | {"LogLevel":{"Default":"Information","Microsoft":"Warning"}} | - | - |
-| Logging:LogLevel | - | {"Default":"Information","Microsoft":"Warning"} | - | - |
+| Logging | - | - | - | - |
+| Logging:LogLevel | - | - | - | - |
 | Logging:LogLevel:Default | \`重要\` | Information | デフォルトログレベル | - |
 | Logging:LogLevel:Microsoft | - | Warning | - | - |
-| Features | - | [{"Name":"Feature1","Enabled":true},{"Name":"Feature2","Enabled":false}] | - | - |
-| Features[0] | - | {"Name":"Feature1","Enabled":true} | 最初の機能 | - |
+| AllowedHosts | \`注意\` | ["localhost","*.example.com","api.test.com"] | 許可するホスト名のリスト | - |
+| Features | - | - | - | - |
+| Features[0] | - | - | 最初の機能 | - |
 | Features[0]:Name | - | Feature1 | 機能名 | - |
 | Features[0]:Enabled | - | true | - | - |
-| Features[1] | - | {"Name":"Feature2","Enabled":false} | - | - |
+| Features[1] | - | - | - | - |
 | Features[1]:Name | - | Feature2 | - | - |
 | Features[1]:Enabled | - | false | - | - |
 

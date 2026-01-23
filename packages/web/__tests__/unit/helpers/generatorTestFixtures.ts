@@ -39,6 +39,7 @@ export class GeneratorTestFixtures {
           Microsoft: 'Warning'
         }
       },
+      AllowedHosts: ['localhost', '*.example.com', 'api.test.com'],
       Features: [
         { Name: 'Feature1', Enabled: true },
         { Name: 'Feature2', Enabled: false }
@@ -91,6 +92,14 @@ export class GeneratorTestFixtures {
             '備考': 'Information推奨'
           },
           tags: ['重要']
+        },
+        'AllowedHosts': {
+          path: 'AllowedHosts',
+          modifiedAt: '2026-01-22T00:00:00.000Z',
+          fields: {
+            '説明': '許可するホスト名のリスト'
+          },
+          tags: ['注意']
         },
         'Features[0]': {
           path: 'Features[0]',

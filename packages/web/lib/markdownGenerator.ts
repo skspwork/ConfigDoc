@@ -2,6 +2,7 @@ import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { ConfigParser } from './configParser';
 import { sortTagsByOrder } from './configManagerUtils';
+import { getPropertyByPath } from './utils';
 
 export class MarkdownGenerator {
   private rootPath: string;
@@ -53,8 +54,29 @@ export class MarkdownGenerator {
 
       for (const propertyPath of allPropertyPaths) {
         const doc = docs.properties[propertyPath];
+        const value = getPropertyByPath(configData, propertyPath);
 
         markdown += `#### \`${propertyPath}\`\n\n`;
+
+        // 値を表示（プリミティブ値とプリミティブ配列）
+        if (value !== undefined && value !== null) {
+          const valueType = typeof value;
+          const isArray = Array.isArray(value);
+          const isObject = valueType === 'object' && !isArray;
+
+          if (isArray) {
+            // 配列の場合：要素がプリミティブならば表示
+            const hasPrimitiveElements = value.length > 0 && value.every((item: any) =>
+              typeof item !== 'object' || item === null
+            );
+            if (hasPrimitiveElements) {
+              markdown += `**値:** \`${JSON.stringify(value)}\`\n\n`;
+            }
+          } else if (!isObject) {
+            // プリミティブ値を表示
+            markdown += `**値:** \`${String(value)}\`\n\n`;
+          }
+        }
 
         // ドキュメントがある場合
         if (doc) {
@@ -66,9 +88,9 @@ export class MarkdownGenerator {
           // フィールドをprojectFieldsの順序で表示
           if (doc.fields) {
             for (const fieldKey of fieldKeys) {
-              const value = doc.fields[fieldKey];
-              if (value) {
-                markdown += `**${fieldKey}:**\n\n${value}\n\n`;
+              const fieldValue = doc.fields[fieldKey];
+              if (fieldValue) {
+                markdown += `**${fieldKey}:**\n\n${fieldValue}\n\n`;
               }
             }
           }

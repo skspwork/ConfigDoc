@@ -388,6 +388,11 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
           "Microsoft": "Warning"
         }
       },
+      "AllowedHosts": [
+        "localhost",
+        "*.example.com",
+        "api.test.com"
+      ],
       "Features": [
         {
           "Name": "Feature1",
@@ -426,6 +431,16 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
           },
           "tags": [
             "重要"
+          ]
+        },
+        "AllowedHosts": {
+          "path": "AllowedHosts",
+          "modifiedAt": "2026-01-22T00:00:00.000Z",
+          "fields": {
+            "説明": "許可するホスト名のリスト"
+          },
+          "tags": [
+            "注意"
           ]
         },
         "Features[0]": {

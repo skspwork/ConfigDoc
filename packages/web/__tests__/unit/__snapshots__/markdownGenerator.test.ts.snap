@@ -25,6 +25,8 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Database:Host\`
 
+**値:** \`localhost\`
+
 **説明:**
 
 データベースホスト名
@@ -33,11 +35,15 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Database:Port\`
 
+**値:** \`5432\`
+
 *ドキュメントなし*
 
 ---
 
 #### \`Database:ConnectionString\`
+
+**値:** \`Server=localhost;Database=test\`
 
 *ドキュメントなし*
 
@@ -57,6 +63,8 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Logging:LogLevel:Default\`
 
+**値:** \`Information\`
+
 **タグ:** \`重要\`
 
 **説明:**
@@ -67,7 +75,21 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Logging:LogLevel:Microsoft\`
 
+**値:** \`Warning\`
+
 *ドキュメントなし*
+
+---
+
+#### \`AllowedHosts\`
+
+**値:** \`["localhost","*.example.com","api.test.com"]\`
+
+**タグ:** \`注意\`
+
+**説明:**
+
+許可するホスト名のリスト
 
 ---
 
@@ -87,6 +109,8 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Features[0]:Name\`
 
+**値:** \`Feature1\`
+
 **説明:**
 
 機能名
@@ -94,6 +118,8 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 ---
 
 #### \`Features[0]:Enabled\`
+
+**値:** \`true\`
 
 *ドキュメントなし*
 
@@ -107,11 +133,15 @@ exports[`MarkdownGenerator > generates markdown with correct format 1`] = `
 
 #### \`Features[1]:Name\`
 
+**値:** \`Feature2\`
+
 *ドキュメントなし*
 
 ---
 
 #### \`Features[1]:Enabled\`
+
+**値:** \`false\`
 
 *ドキュメントなし*
 

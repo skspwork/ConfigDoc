@@ -191,20 +191,24 @@ describe('formatValue', () => {
     expect(formatValue(undefined)).toBe('-');
   });
 
-  test('オブジェクトはJSON文字列に変換する', () => {
-    expect(formatValue({ key: 'value' })).toBe('{"key":"value"}');
+  test('オブジェクトは"-"を返す', () => {
+    expect(formatValue({ key: 'value' })).toBe('-');
   });
 
-  test('配列はJSON文字列に変換する', () => {
+  test('プリミティブ配列はJSON文字列に変換する', () => {
     expect(formatValue([1, 2, 3])).toBe('[1,2,3]');
   });
 
-  test('空のオブジェクトはJSON文字列に変換する', () => {
-    expect(formatValue({})).toBe('{}');
+  test('オブジェクト配列は"-"を返す', () => {
+    expect(formatValue([{ name: 'test' }])).toBe('-');
   });
 
-  test('空の配列はJSON文字列に変換する', () => {
-    expect(formatValue([])).toBe('[]');
+  test('空のオブジェクトは"-"を返す', () => {
+    expect(formatValue({})).toBe('-');
+  });
+
+  test('空の配列は"-"を返す', () => {
+    expect(formatValue([])).toBe('-');
   });
 
   test('0は"0"を返す（falsyだが有効な値）', () => {
