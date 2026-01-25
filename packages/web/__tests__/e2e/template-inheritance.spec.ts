@@ -321,8 +321,8 @@ test.describe.serial('テンプレート水平展開機能', () => {
       await assocCheckbox.check();
       await page.waitForTimeout(500);
 
-      // 連想配列バッジが表示される（exact matchで検索）
-      const assocBadge = page.getByText('連想配列', { exact: true });
+      // 連想配列バッジが表示される（複数ある場合はfirstを使用）
+      const assocBadge = page.getByText('連想配列', { exact: true }).first();
       await expect(assocBadge).toBeVisible();
     }
   });
@@ -445,8 +445,8 @@ test.describe.serial('ワイルドカード連想配列機能', () => {
         // チェック状態が維持されている
         await expect(mapAssocCheckbox).toBeChecked();
 
-        // 連想配列バッジが表示される
-        const mapAssocBadge = page.getByText('連想配列', { exact: true });
+        // 連想配列バッジが表示される（複数ある場合はfirstを使用）
+        const mapAssocBadge = page.getByText('連想配列', { exact: true }).first();
         await expect(mapAssocBadge).toBeVisible();
       }
     }

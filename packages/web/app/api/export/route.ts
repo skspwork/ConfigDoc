@@ -24,13 +24,51 @@ export async function POST(request: NextRequest) {
     // outputDirが空文字列の場合はプロジェクトルートに出力
     const outputDir = body.outputDir?.trim() || '';
 
-    // フォーマットに応じてジェネレーターを選択
-    let content: string;
+    const fsService = new FileSystemService(rootPath);
+    await fsService.ensureConfigDocDir();
 
+    // 出力ディレクトリのパスを決定
+    const outputDirPath = outputDir
+      ? path.join(rootPath, outputDir)
+      : rootPath;
+
+    // ディレクトリを確保
+    await fs.mkdir(outputDirPath, { recursive: true });
+
+    // Markdown形式の場合はファイルごとに個別のMarkdownファイルを生成
     if (format === 'markdown') {
+      const settings = await fsService.loadProjectSettings();
+      if (!settings || settings.configFiles.length === 0) {
+        return NextResponse.json({
+          success: false,
+          error: 'ドキュメント化された設定ファイルがありません'
+        }, { status: 400 });
+      }
+
       const generator = new MarkdownGenerator(rootPath);
-      content = await generator.generateMarkdown();
-    } else if (format === 'markdown-table') {
+      const outputPaths: string[] = [];
+
+      for (const configFilePath of settings.configFiles) {
+        // JSONファイル名から拡張子を除いてMarkdownファイル名を生成
+        const configFileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
+        const markdownFileName = configFileName.replace(/\.json$/i, '.md');
+        const outputPath = path.join(outputDirPath, markdownFileName);
+
+        const content = await generator.generateMarkdownForFile(configFilePath);
+        await fs.writeFile(outputPath, content, 'utf-8');
+        outputPaths.push(outputPath);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Markdownファイルを${outputPaths.length}件生成しました`,
+        outputPaths
+      });
+    }
+
+    // HTML/Markdownテーブル形式は従来通り単一ファイル
+    let content: string;
+    if (format === 'markdown-table') {
       const generator = new MarkdownTableGenerator(rootPath);
       content = await generator.generateMarkdownTable();
     } else {
@@ -40,26 +78,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 出力ファイル名を決定（拡張子付き）
-    const extension = (format === 'markdown' || format === 'markdown-table') ? 'md' : 'html';
+    const extension = format === 'markdown-table' ? 'md' : 'html';
     const outputFileName = `${fileName}.${extension}`;
 
-    // 出力パス: {outputDir}/{fileName}.{extension}（outputDirが空ならルート直下）
-    const fsService = new FileSystemService(rootPath);
-    await fsService.ensureConfigDocDir();
-    const outputPath = outputDir
-      ? path.join(rootPath, outputDir, outputFileName)
-      : path.join(rootPath, outputFileName);
-
-    // ディレクトリを確保
-    const outputDirPath = path.dirname(outputPath);
-    await fs.mkdir(outputDirPath, { recursive: true });
+    // 出力パス
+    const outputPath = path.join(outputDirPath, outputFileName);
 
     // ファイルを保存
     await fs.writeFile(outputPath, content, 'utf-8');
 
     return NextResponse.json({
       success: true,
-      message: `${format === 'markdown' ? 'Markdown' : 'HTML'}ファイルを生成しました`,
+      message: `${format === 'markdown-table' ? 'Markdownテーブル' : 'HTML'}ファイルを生成しました`,
       outputPath
     });
   } catch (error) {
