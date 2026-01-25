@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ConfigDocs, PropertyDoc, ExportSettings, DEFAULT_FIELDS } from '@/types';
+import { ConfigDocs, PropertyDoc, ExportSettings, DEFAULT_FIELDS, AssociativeArrayMapping } from '@/types';
 import { LoadedConfig } from '@/components/ConfigFileTabs';
 import { ToastType } from '@/components/Toast';
 import {
@@ -10,6 +10,7 @@ import {
   detectTagChanges,
   detectFieldChanges
 } from '@/lib/configManagerUtils';
+import { getValueByPath, getTemplatePathForConcrete, normalizeToTemplatePath, findTemplateForPath, convertToWildcardBasePath } from '@/lib/templatePath';
 
 interface Toast {
   id: string;
@@ -23,12 +24,14 @@ interface UseConfigManagerReturn {
   activeConfigIndex: number;
   activeConfig: LoadedConfig | undefined;
   selectedPath: string;
+  selectedNodeType: 'object' | 'array' | 'string' | 'number' | 'boolean' | undefined;
   editingDoc: PropertyDoc | null;
   originalDoc: PropertyDoc | null;
   hasUnsavedChanges: boolean;
   exportSettings: ExportSettings | undefined;
   availableTags: string[];
   projectFields: Record<string, string>;
+  associativeArrays: AssociativeArrayMapping[];
   toasts: Toast[];
   rootPath: string;
   isInitialized: boolean;
@@ -49,8 +52,11 @@ interface UseConfigManagerReturn {
   handleExport: (settings: ExportSettings) => Promise<void>;
   handleAvailableTagsChange: (tags: string[]) => Promise<void>;
   handleProjectFieldsChange: (fields: Record<string, string>) => Promise<void>;
+  handleToggleAssociativeArray: (path: string, isAssociative: boolean) => Promise<void>;
   checkForChanges: (current: PropertyDoc | null, original: PropertyDoc | null) => boolean;
   resetSelection: () => void;
+  isAssociativeArray: (path: string) => boolean;
+  isDescendantOfAssociativeArray: (path: string) => boolean;
 }
 
 export function useConfigManager(): UseConfigManagerReturn {
@@ -73,6 +79,12 @@ export function useConfigManager(): UseConfigManagerReturn {
 
   // プロジェクトのフィールド定義
   const [projectFields, setProjectFields] = useState<Record<string, string>>(DEFAULT_FIELDS);
+
+  // 連想配列マッピング
+  const [associativeArrays, setAssociativeArrays] = useState<AssociativeArrayMapping[]>([]);
+
+  // 選択されたノードの型
+  const [selectedNodeType, setSelectedNodeType] = useState<'object' | 'array' | 'string' | 'number' | 'boolean' | undefined>(undefined);
 
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -101,6 +113,9 @@ export function useConfigManager(): UseConfigManagerReturn {
     const currentFields = current.fields || {};
     const originalFields = original.fields || {};
     if (detectFieldChanges(originalFields, currentFields)) return true;
+
+    // isTemplateの比較
+    if ((current.isTemplate || false) !== (original.isTemplate || false)) return true;
 
     return false;
   }, []);
@@ -241,6 +256,10 @@ export function useConfigManager(): UseConfigManagerReturn {
             if (metaResult.success && metaResult.data?.fields) {
               setProjectFields(metaResult.data.fields);
             }
+
+            if (metaResult.success && metaResult.data?.associativeArrays) {
+              setAssociativeArrays(metaResult.data.associativeArrays);
+            }
           }
         }
 
@@ -332,6 +351,18 @@ export function useConfigManager(): UseConfigManagerReturn {
     updateMetadata(newConfigs.map(c => c.filePath));
   }, [updateMetadata]);
 
+  // テンプレートのソースパスかどうかをチェック
+  const findTemplateWithSourcePath = useCallback((path: string): PropertyDoc | undefined => {
+    if (!activeConfig) return undefined;
+    // すべてのテンプレートドキュメントをチェック
+    for (const doc of Object.values(activeConfig.docs.properties)) {
+      if (doc.isTemplate && doc.sourceTemplatePath === path) {
+        return doc;
+      }
+    }
+    return undefined;
+  }, [activeConfig]);
+
   // プロパティを選択
   const handleSelectProperty = useCallback((path: string) => {
     if (hasUnsavedChanges) {
@@ -343,25 +374,108 @@ export function useConfigManager(): UseConfigManagerReturn {
     setSelectedPath(path);
     const existingDoc = activeConfig?.docs.properties[path];
 
+    // ノードタイプを判定
+    if (activeConfig?.configData) {
+      const value = getValueByPath(activeConfig.configData, path);
+      if (value === null || value === undefined) {
+        setSelectedNodeType(undefined);
+      } else if (Array.isArray(value)) {
+        setSelectedNodeType('array');
+      } else if (typeof value === 'object') {
+        setSelectedNodeType('object');
+      } else if (typeof value === 'string') {
+        setSelectedNodeType('string');
+      } else if (typeof value === 'number') {
+        setSelectedNodeType('number');
+      } else if (typeof value === 'boolean') {
+        setSelectedNodeType('boolean');
+      } else {
+        setSelectedNodeType(undefined);
+      }
+    }
+
+    // テンプレート元パスかチェック（直接ドキュメントの有無に関わらず）
+    const templateFromSourcePath = findTemplateWithSourcePath(path);
+    const isTemplateSource = !!templateFromSourcePath;
+
+    // 継承用テンプレートを検索（直接ドキュメント以外のテンプレート）
+    const inheritedTemplate = activeConfig?.configData
+      ? findTemplateForPath(
+          path,
+          activeConfig.docs.properties as Record<string, PropertyDoc>,
+          associativeArrays,
+          activeConfig.configData
+        )
+      : undefined;
+
     if (existingDoc) {
-      const docCopy = normalizePropertyDoc({
+      // 直接ドキュメントがある場合
+      let mergedDoc = {
         ...existingDoc,
-        tags: existingDoc.tags || []
-      });
+        tags: existingDoc.tags || [],
+        // このパスがテンプレート元の場合はisTemplateをtrueに設定
+        isTemplate: isTemplateSource ? true : existingDoc.isTemplate
+      };
+
+      // Inherited: テンプレートからの継承がある場合、空のフィールドとタグをマージ
+      if (inheritedTemplate && !isTemplateSource) {
+        // タグが空の場合はテンプレートのタグを使用
+        if ((!mergedDoc.tags || mergedDoc.tags.length === 0) && inheritedTemplate.tags && inheritedTemplate.tags.length > 0) {
+          mergedDoc = { ...mergedDoc, tags: [...inheritedTemplate.tags] };
+        }
+
+        // 空のフィールドはテンプレートの値で補完
+        if (inheritedTemplate.fields) {
+          const mergedFields = { ...(mergedDoc.fields || {}) };
+          for (const [key, templateValue] of Object.entries(inheritedTemplate.fields)) {
+            const strValue = templateValue as string;
+            if ((!mergedFields[key] || mergedFields[key].trim() === '') && strValue && strValue.trim() !== '') {
+              mergedFields[key] = strValue;
+            }
+          }
+          mergedDoc = { ...mergedDoc, fields: mergedFields };
+        }
+      }
+
+      const docCopy = normalizePropertyDoc(mergedDoc);
       setEditingDoc(docCopy);
       setOriginalDoc(docCopy);
     } else {
-      const newDoc: PropertyDoc = {
-        path,
-        tags: [],
-        fields: { ...projectFields },
-        modifiedAt: new Date().toISOString()
-      };
-      setEditingDoc(newDoc);
-      setOriginalDoc(newDoc);
+      // 直接ドキュメントがない場合
+      if (templateFromSourcePath) {
+        // テンプレート元パスの場合、テンプレートの内容を読み込み、isTemplateをtrueに
+        const docCopy = normalizePropertyDoc({
+          ...templateFromSourcePath,
+          path,
+          tags: templateFromSourcePath.tags || [],
+          isTemplate: true
+        });
+        setEditingDoc(docCopy);
+        setOriginalDoc(docCopy);
+      } else if (inheritedTemplate) {
+        // 継承テンプレートがある場合、その内容を初期値として使用
+        const docCopy = normalizePropertyDoc({
+          path,
+          tags: inheritedTemplate.tags ? [...inheritedTemplate.tags] : [],
+          fields: inheritedTemplate.fields ? { ...inheritedTemplate.fields } : { ...projectFields },
+          modifiedAt: new Date().toISOString(),
+          isTemplate: false
+        });
+        setEditingDoc(docCopy);
+        setOriginalDoc(docCopy);
+      } else {
+        const newDoc: PropertyDoc = {
+          path,
+          tags: [],
+          fields: { ...projectFields },
+          modifiedAt: new Date().toISOString()
+        };
+        setEditingDoc(newDoc);
+        setOriginalDoc(newDoc);
+      }
     }
     setHasUnsavedChanges(false);
-  }, [activeConfig, hasUnsavedChanges, normalizePropertyDoc, projectFields]);
+  }, [activeConfig, associativeArrays, findTemplateWithSourcePath, hasUnsavedChanges, normalizePropertyDoc, projectFields]);
 
   // プロパティを保存
   const handleSaveProperty = useCallback(async () => {
@@ -379,26 +493,58 @@ export function useConfigManager(): UseConfigManagerReturn {
         body: JSON.stringify({
           configFilePath: activeConfig.filePath,
           propertyPath: selectedPath,
-          propertyDoc
+          propertyDoc,
+          associativeArrays,
+          configData: activeConfig.configData
         })
       });
 
       const result = await response.json();
       if (result.success) {
-        setLoadedConfigs(prev => prev.map((config, idx) =>
-          idx === activeConfigIndex
-            ? {
-                ...config,
-                docs: {
-                  ...config.docs,
-                  properties: {
-                    ...config.docs.properties,
-                    [selectedPath]: propertyDoc
-                  }
-                }
+        setLoadedConfigs(prev => prev.map((config, idx) => {
+          if (idx !== activeConfigIndex) return config;
+
+          const updatedProperties = { ...config.docs.properties };
+
+          if (propertyDoc.isTemplate) {
+            // テンプレートとして保存する場合、テンプレートパスでドキュメントを追加
+            let templatePath: string;
+            if (associativeArrays.length > 0 && config.configData) {
+              templatePath = getTemplatePathForConcrete(selectedPath, associativeArrays, config.configData);
+            } else {
+              templatePath = normalizeToTemplatePath(selectedPath);
+            }
+
+            // テンプレートドキュメントを作成
+            const templateDoc: PropertyDoc = {
+              ...propertyDoc,
+              path: templatePath,
+              sourceTemplatePath: selectedPath
+            };
+            updatedProperties[templatePath] = templateDoc;
+
+            // 直接パスのドキュメントも更新（isTemplate: falseとして保存される場合があるため）
+            updatedProperties[selectedPath] = { ...propertyDoc, isTemplate: false };
+          } else {
+            // テンプレートのチェックを外した場合、関連するテンプレートドキュメントを削除
+            for (const [docPath, doc] of Object.entries(updatedProperties)) {
+              if (doc.isTemplate && doc.sourceTemplatePath === selectedPath) {
+                delete updatedProperties[docPath];
+                break;
               }
-            : config
-        ));
+            }
+            // 現在のドキュメントを更新
+            updatedProperties[selectedPath] = propertyDoc;
+          }
+
+          return {
+            ...config,
+            docs: {
+              ...config.docs,
+              properties: updatedProperties
+            }
+          };
+        }));
         setEditingDoc(propertyDoc);
         setOriginalDoc(propertyDoc);
         setHasUnsavedChanges(false);
@@ -615,19 +761,122 @@ export function useConfigManager(): UseConfigManagerReturn {
     setSelectedPath('');
     setEditingDoc(null);
     setHasUnsavedChanges(false);
+    setSelectedNodeType(undefined);
   }, []);
+
+  // 連想配列かどうかをチェック
+  // ワイルドカード付きbasePathにも対応
+  const isAssociativeArray = useCallback((path: string): boolean => {
+    // 直接一致をチェック
+    if (associativeArrays.some(mapping => mapping.basePath === path)) {
+      return true;
+    }
+
+    // ワイルドカード化されたパスでチェック
+    const wildcardedPath = convertToWildcardBasePath(path, associativeArrays, activeConfig?.configData);
+    if (wildcardedPath !== path && associativeArrays.some(mapping => mapping.basePath === wildcardedPath)) {
+      return true;
+    }
+
+    // ワイルドカードマッピングとのマッチをチェック
+    return associativeArrays.some(mapping => {
+      if (!mapping.basePath.includes('[*]')) return false;
+
+      // ワイルドカードパスを正規表現に変換してマッチング
+      const regexPattern = mapping.basePath
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\\\[\\\*\\\]/g, ':[^:]+');
+
+      const regex = new RegExp(`^${regexPattern}$`);
+      return regex.test(path);
+    });
+  }, [associativeArrays, activeConfig?.configData]);
+
+  // 連想配列の子孫パスかどうかをチェック
+  const isDescendantOfAssociativeArray = useCallback((path: string): boolean => {
+    return associativeArrays.some(mapping =>
+      path.startsWith(mapping.basePath + ':')
+    );
+  }, [associativeArrays]);
+
+  // 連想配列の登録/解除
+  const handleToggleAssociativeArray = useCallback(async (path: string, isAssociative: boolean) => {
+    let newMappings: AssociativeArrayMapping[];
+
+    if (isAssociative) {
+      // 親の連想配列キーをワイルドカードに変換したbasePathを生成
+      const wildcardedBasePath = convertToWildcardBasePath(
+        path,
+        associativeArrays,
+        activeConfig?.configData
+      );
+
+      // 追加
+      newMappings = [
+        ...associativeArrays,
+        {
+          basePath: wildcardedBasePath,
+          createdAt: new Date().toISOString()
+        }
+      ];
+    } else {
+      // 削除 - パスまたはワイルドカード化されたパスでマッチング
+      const wildcardedBasePath = convertToWildcardBasePath(
+        path,
+        associativeArrays,
+        activeConfig?.configData
+      );
+
+      // このパスを親として持つ子孫のワイルドカードマッピングも削除
+      // 例: "AppSettings:Fields" を削除 → "AppSettings:Fields[*]:Contents:Map" も削除
+      const pathWithWildcard = path + '[*]';
+
+      newMappings = associativeArrays.filter(mapping => {
+        // 直接一致は削除
+        if (mapping.basePath === path || mapping.basePath === wildcardedBasePath) {
+          return false;
+        }
+
+        // このパスのワイルドカード形式で始まる子孫マッピングも削除
+        // 例: mapping.basePath = "AppSettings:Fields[*]:Contents:Map"
+        //     pathWithWildcard = "AppSettings:Fields[*]"
+        if (mapping.basePath.startsWith(pathWithWildcard + ':') || mapping.basePath.startsWith(pathWithWildcard)) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    setAssociativeArrays(newMappings);
+
+    // APIに保存
+    try {
+      await fetch('/api/config/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ associativeArrays: newMappings })
+      });
+      showToast(isAssociative ? '連想配列として登録しました' : '連想配列登録を解除しました');
+    } catch (error) {
+      console.error('Failed to save associative array mapping:', error);
+      showToast('連想配列設定の保存に失敗しました', 'error');
+    }
+  }, [associativeArrays, activeConfig?.configData, showToast]);
 
   return {
     loadedConfigs,
     activeConfigIndex,
     activeConfig,
     selectedPath,
+    selectedNodeType,
     editingDoc,
     originalDoc,
     hasUnsavedChanges,
     exportSettings,
     availableTags,
     projectFields,
+    associativeArrays,
     toasts,
     rootPath,
     isInitialized,
@@ -647,7 +896,10 @@ export function useConfigManager(): UseConfigManagerReturn {
     handleExport,
     handleAvailableTagsChange,
     handleProjectFieldsChange,
+    handleToggleAssociativeArray,
     checkForChanges,
-    resetSelection
+    resetSelection,
+    isAssociativeArray,
+    isDescendantOfAssociativeArray
   };
 }

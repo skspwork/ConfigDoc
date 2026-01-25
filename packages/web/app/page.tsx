@@ -20,12 +20,14 @@ export default function Home() {
     activeConfigIndex,
     activeConfig,
     selectedPath,
+    selectedNodeType,
     editingDoc,
     originalDoc,
     hasUnsavedChanges,
     exportSettings,
     availableTags,
     projectFields,
+    associativeArrays,
     toasts,
     rootPath,
 
@@ -41,8 +43,11 @@ export default function Home() {
     handleExport,
     handleAvailableTagsChange,
     handleProjectFieldsChange,
+    handleToggleAssociativeArray,
     checkForChanges,
-    resetSelection
+    resetSelection,
+    isAssociativeArray,
+    isDescendantOfAssociativeArray
   } = useConfigManager();
 
   return (
@@ -83,6 +88,7 @@ export default function Home() {
                   onSelectProperty={handleSelectProperty}
                   onEditProperty={handleSelectProperty}
                   selectedPath={selectedPath}
+                  associativeArrays={associativeArrays}
                 />
               </div>
             </div>
@@ -94,6 +100,9 @@ export default function Home() {
               hasUnsavedChanges={hasUnsavedChanges}
               availableTags={availableTags}
               projectFields={projectFields}
+              selectedNodeType={selectedNodeType}
+              isAssociativeArray={isAssociativeArray(selectedPath)}
+              isDescendantOfAssociativeArray={isDescendantOfAssociativeArray(selectedPath)}
               onEditingDocChange={(doc) => {
                 setEditingDoc(doc);
                 setHasUnsavedChanges(checkForChanges(doc, originalDoc));
@@ -101,6 +110,7 @@ export default function Home() {
               onAvailableTagsChange={handleAvailableTagsChange}
               onProjectFieldsChange={handleProjectFieldsChange}
               onSave={handleSaveProperty}
+              onToggleAssociativeArray={handleToggleAssociativeArray}
             />
           </div>
         )}

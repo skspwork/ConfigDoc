@@ -1,7 +1,7 @@
 import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { escapeHtml } from './utils';
-import { ProjectConfigFiles, ConfigDocs } from '@/types';
+import { ProjectConfigFiles, ConfigDocs, AssociativeArrayMapping } from '@/types';
 import { sortTagsByOrder } from './configManagerUtils';
 
 interface ConfigWithDocs {
@@ -66,7 +66,7 @@ export class HtmlGenerator {
       configFiles: []
     };
 
-    return this.generateFullHtml(metadata, configs, fieldKeys, availableTags);
+    return this.generateFullHtml(metadata, configs, fieldKeys, availableTags, settings.associativeArrays || []);
   }
 
   private generateEmptyHtml(): string {
@@ -92,10 +92,11 @@ export class HtmlGenerator {
 </html>`;
   }
 
-  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[], fieldKeys: string[], availableTags: string[]): string {
+  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[], fieldKeys: string[], availableTags: string[], associativeArrays: AssociativeArrayMapping[]): string {
     const configsJson = JSON.stringify(configs, null, 2);
     const fieldKeysJson = JSON.stringify(fieldKeys);
     const availableTagsJson = JSON.stringify(availableTags);
+    const associativeArraysJson = JSON.stringify(associativeArrays);
 
     return `<!DOCTYPE html>
 <html lang="ja">
@@ -134,6 +135,7 @@ export class HtmlGenerator {
     const configs = ${configsJson};
     const fieldKeys = ${fieldKeysJson};
     const availableTags = ${availableTagsJson};
+    const associativeArrays = ${associativeArraysJson};
     let activeConfigIndex = 0;
     let selectedPath = '';
     let currentSearchQuery = '';
@@ -149,6 +151,291 @@ export class HtmlGenerator {
         if (indexB === -1) return -1;
         return 0;
       });
+    }
+
+    // テンプレートパスに変換（配列インデックスをワイルドカードに）
+    function normalizeToTemplatePath(path) {
+      return path.replace(/\\[\\d+\\]/g, '[*]');
+    }
+
+    // テンプレートパスにマッチするか判定
+    function matchesTemplatePath(concretePath, templatePath) {
+      const regexPattern = templatePath
+        .replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')
+        .replace(/\\\\\\[\\\\\\*\\\\\\]/g, '\\\\[\\\\d+\\\\]');
+      const regex = new RegExp('^' + regexPattern + '\$');
+      return regex.test(concretePath);
+    }
+
+    // パスから値を取得するヘルパー関数
+    function getValueByPath(obj, path) {
+      if (!path || !obj) return obj;
+      const keys = path.split(/(?=\\[)|:/);
+      let value = obj;
+      for (const key of keys) {
+        if (value === undefined || value === null) return undefined;
+        if (key.startsWith('[') && key.endsWith(']')) {
+          const index = parseInt(key.slice(1, -1), 10);
+          if (Array.isArray(value)) {
+            value = value[index];
+          } else {
+            return undefined;
+          }
+        } else if (key && typeof value === 'object' && key in value) {
+          value = value[key];
+        } else if (key) {
+          return undefined;
+        }
+      }
+      return value;
+    }
+
+    // マッチング用にbasePathを正規化するヘルパー関数
+    function normalizeBasePathForMatching(basePath, mappings, configData) {
+      for (const mapping of mappings) {
+        if (basePath.startsWith(mapping.basePath + ':') && mapping.basePath !== basePath) {
+          const remainder = basePath.substring(mapping.basePath.length + 1);
+          const parts = remainder.split(':');
+          const keyName = parts[0];
+          const parentObj = getValueByPath(configData, mapping.basePath);
+          if (parentObj && typeof parentObj === 'object' && !Array.isArray(parentObj)) {
+            const keys = Object.keys(parentObj);
+            const keyIndex = keys.indexOf(keyName);
+            if (keyIndex >= 0) {
+              const restOfBasePath = parts.slice(1).join(':');
+              const partiallyNormalized = mapping.basePath + '[' + keyIndex + ']' + (restOfBasePath ? ':' + restOfBasePath : '');
+              return normalizeBasePathForMatching(partiallyNormalized, mappings, configData);
+            }
+          }
+        }
+      }
+      return basePath;
+    }
+
+    // ワイルドカード付きマッピングを適用するヘルパー関数
+    function applyWildcardMapping(path, wildcardBasePath, configData) {
+      const patternParts = wildcardBasePath.split(':');
+      const pathParts = path.split(':');
+      const extractedKeys = [];
+
+      let pathIdx = 0;
+      let configPath = '';
+
+      for (const wPart of patternParts) {
+        if (wPart.endsWith('[*]')) {
+          const baseKey = wPart.slice(0, -3);
+          if (pathParts[pathIdx] === baseKey) {
+            configPath = configPath ? configPath + ':' + baseKey : baseKey;
+            pathIdx++;
+            if (pathIdx < pathParts.length) {
+              extractedKeys.push({ key: pathParts[pathIdx], configPath });
+              pathIdx++;
+            }
+          } else {
+            return path;
+          }
+        } else {
+          if (pathParts[pathIdx] === wPart) {
+            configPath = configPath ? configPath + ':' + wPart : wPart;
+            pathIdx++;
+          } else {
+            return path;
+          }
+        }
+      }
+
+      const remainder = pathIdx < pathParts.length ? pathParts.slice(pathIdx).join(':') : '';
+
+      let resultPath = '';
+      let currentConfigPath = '';
+
+      for (const wPart of patternParts) {
+        if (wPart.endsWith('[*]')) {
+          const baseKey = wPart.slice(0, -3);
+          currentConfigPath = currentConfigPath ? currentConfigPath + ':' + baseKey : baseKey;
+
+          const keyInfo = extractedKeys.find(k => k.configPath === currentConfigPath);
+          if (keyInfo) {
+            const associativeObj = getValueByPath(configData, currentConfigPath);
+            if (associativeObj && typeof associativeObj === 'object' && !Array.isArray(associativeObj)) {
+              const keys = Object.keys(associativeObj);
+              const keyIndex = keys.indexOf(keyInfo.key);
+              if (keyIndex >= 0) {
+                resultPath = resultPath ? resultPath + ':' + baseKey + '[' + keyIndex + ']' : baseKey + '[' + keyIndex + ']';
+                currentConfigPath = currentConfigPath + ':' + keyInfo.key;
+              } else {
+                return path;
+              }
+            } else {
+              return path;
+            }
+          }
+        } else {
+          resultPath = resultPath ? resultPath + ':' + wPart : wPart;
+          currentConfigPath = currentConfigPath ? currentConfigPath + ':' + wPart : wPart;
+        }
+      }
+
+      if (remainder) {
+        const remainderParts = remainder.split(':');
+        const firstKey = remainderParts[0];
+
+        const lastAssocObj = getValueByPath(configData, currentConfigPath);
+        if (lastAssocObj && typeof lastAssocObj === 'object' && !Array.isArray(lastAssocObj)) {
+          const keys = Object.keys(lastAssocObj);
+          const keyIndex = keys.indexOf(firstKey);
+          if (keyIndex >= 0) {
+            resultPath = resultPath + '[' + keyIndex + ']';
+            if (remainderParts.length > 1) {
+              resultPath = resultPath + ':' + remainderParts.slice(1).join(':');
+            }
+          } else {
+            resultPath = resultPath + ':' + remainder;
+          }
+        } else {
+          resultPath = resultPath + ':' + remainder;
+        }
+      }
+
+      return resultPath;
+    }
+
+    // 連想配列パスを正規化（キー名を配列インデックスに変換）- 再帰的に処理
+    // ワイルドカード付きマッピングにも対応
+    function normalizeAssociativeArrayPath(path, mappings, configData) {
+      const sortedMappings = [...mappings].sort((a, b) => b.basePath.length - a.basePath.length);
+      let normalizedPath = path;
+      let changed = true;
+
+      while (changed) {
+        changed = false;
+        for (const mapping of sortedMappings) {
+          const basePath = mapping.basePath;
+
+          // ワイルドカード付きマッピングの場合
+          if (basePath.includes('[*]')) {
+            const result = applyWildcardMapping(normalizedPath, basePath, configData);
+            if (result !== normalizedPath) {
+              normalizedPath = result;
+              changed = true;
+              break;
+            }
+            continue;
+          }
+
+          const normalizedBasePath = normalizeBasePathForMatching(basePath, sortedMappings, configData);
+
+          if (normalizedPath.startsWith(normalizedBasePath + ':')) {
+            const remainder = normalizedPath.substring(normalizedBasePath.length + 1);
+            const parts = remainder.split(':');
+            const keyName = parts[0];
+
+            if (keyName.match(/^\[\d+\]$/)) {
+              continue;
+            }
+
+            const associativeObj = getValueByPath(configData, basePath);
+            if (associativeObj && typeof associativeObj === 'object' && !Array.isArray(associativeObj)) {
+              const keys = Object.keys(associativeObj);
+              const keyIndex = keys.indexOf(keyName);
+              if (keyIndex >= 0) {
+                const restOfPath = parts.slice(1).join(':');
+                normalizedPath = normalizedBasePath + '[' + keyIndex + ']' + (restOfPath ? ':' + restOfPath : '');
+                changed = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      return normalizedPath;
+    }
+
+    // 具体的なパスからテンプレートパスを取得（連想配列も考慮）
+    function getTemplatePathForConcrete(concretePath, mappings, configData) {
+      let path = concretePath;
+      if (configData) {
+        path = normalizeAssociativeArrayPath(path, mappings, configData);
+      }
+      return normalizeToTemplatePath(path);
+    }
+
+    // ドキュメントを検索（テンプレートフォールバック付き）
+    function findDocumentationForPath(propertyPath, docsProperties, configData) {
+      // 1. 直接ルックアップ
+      if (docsProperties[propertyPath]) {
+        return docsProperties[propertyPath];
+      }
+
+      // 2. テンプレートパスでフォールバック検索（連想配列も考慮）
+      const templatePath = getTemplatePathForConcrete(propertyPath, associativeArrays, configData);
+      if (templatePath !== propertyPath && docsProperties[templatePath]) {
+        const doc = docsProperties[templatePath];
+        if (doc.isTemplate) {
+          return doc;
+        }
+      }
+
+      // 3. すべてのテンプレートドキュメントを検索
+      for (const [docPath, doc] of Object.entries(docsProperties)) {
+        if (doc.isTemplate && matchesTemplatePath(propertyPath, docPath)) {
+          return doc;
+        }
+      }
+
+      return null;
+    }
+
+    // テンプレートドキュメントのみを検索（連想配列も考慮）
+    function findTemplateForPath(propertyPath, docsProperties, configData) {
+      const templatePath = getTemplatePathForConcrete(propertyPath, associativeArrays, configData);
+      if (templatePath !== propertyPath && docsProperties[templatePath]) {
+        const doc = docsProperties[templatePath];
+        if (doc.isTemplate) {
+          return doc;
+        }
+      }
+
+      for (const [docPath, doc] of Object.entries(docsProperties)) {
+        if (doc.isTemplate && matchesTemplatePath(propertyPath, docPath)) {
+          return doc;
+        }
+      }
+
+      return null;
+    }
+
+    // ドキュメントを検索してマージ（直接ドキュメントの空フィールドをテンプレートで補完）
+    function findAndMergeDocumentation(propertyPath, docsProperties, configData) {
+      const directDoc = docsProperties[propertyPath];
+      const templateDoc = findTemplateForPath(propertyPath, docsProperties, configData);
+
+      if (!directDoc && !templateDoc) return null;
+      if (directDoc && !templateDoc) return directDoc;
+      if (!directDoc && templateDoc) return templateDoc;
+
+      // 両方ある場合：マージ
+      const mergedDoc = { ...directDoc };
+
+      // タグのマージ
+      if ((!directDoc.tags || directDoc.tags.length === 0) && templateDoc.tags && templateDoc.tags.length > 0) {
+        mergedDoc.tags = templateDoc.tags;
+      }
+
+      // フィールドのマージ
+      if (templateDoc.fields) {
+        const mergedFields = { ...(directDoc.fields || {}) };
+        for (const [key, value] of Object.entries(templateDoc.fields)) {
+          if (!mergedFields[key] || mergedFields[key].trim() === '') {
+            if (value && value.trim() !== '') {
+              mergedFields[key] = value;
+            }
+          }
+        }
+        mergedDoc.fields = mergedFields;
+      }
+
+      return mergedDoc;
     }
 
     ${this.getScripts()}
@@ -501,13 +788,13 @@ export class HtmlGenerator {
   private getScripts(): string {
     return `
     // ツリー構造を構築
-    function buildTree(obj, path = '', docs = {}) {
+    function buildTree(obj, path = '', docs = {}, configData = null) {
       const tree = [];
 
       for (const key in obj) {
         const currentPath = path ? \`\${path}:\${key}\` : key;
         const value = obj[key];
-        const hasDoc = docs.properties && docs.properties[currentPath];
+        const hasDoc = docs.properties && findDocumentationForPath(currentPath, docs.properties, configData);
 
         if (typeof value === 'object' && value !== null) {
           if (Array.isArray(value)) {
@@ -525,8 +812,8 @@ export class HtmlGenerator {
                     path: elementPath,
                     value: item,
                     hasChildren: true,
-                    hasDoc: !!(docs.properties && docs.properties[elementPath]),
-                    children: buildTree(item, elementPath, docs)
+                    hasDoc: !!(docs.properties && findDocumentationForPath(elementPath, docs.properties, configData)),
+                    children: buildTree(item, elementPath, docs, configData)
                   });
                 }
               });
@@ -557,7 +844,7 @@ export class HtmlGenerator {
               value: value,
               hasChildren: true,
               hasDoc: !!hasDoc,
-              children: buildTree(value, currentPath, docs)
+              children: buildTree(value, currentPath, docs, configData)
             });
           }
         } else {
@@ -640,7 +927,7 @@ export class HtmlGenerator {
     function showPropertyDetail(node) {
       const detailEl = document.getElementById('propertyDetail');
       const config = configs[activeConfigIndex];
-      const doc = config.docs.properties && config.docs.properties[node.path];
+      const doc = config.docs.properties ? findAndMergeDocumentation(node.path, config.docs.properties, config.configData) : null;
 
       let html = \`<h2>\${escapeHtml(node.key)}</h2>\`;
       html += \`<div class="property-file" title="\${escapeHtml(config.filePath)}">ファイル: \${escapeHtml(config.filePath)}</div>\`;
@@ -730,7 +1017,7 @@ export class HtmlGenerator {
       treeEl.innerHTML = '';
 
       const config = configs[activeConfigIndex];
-      const tree = buildTree(config.configData, '', config.docs);
+      const tree = buildTree(config.configData, '', config.docs, config.configData);
       renderTree(tree, treeEl);
     }
 
@@ -795,7 +1082,7 @@ export class HtmlGenerator {
         // 全設定ファイルから検索してマッチした項目を収集
         let foundInConfigs = [];
         configs.forEach((config, index) => {
-          const tree = buildTree(config.configData, '', config.docs);
+          const tree = buildTree(config.configData, '', config.docs, config.configData);
           const hasMatch = searchInTreeForConfig(tree, query, config);
           if (hasMatch) {
             foundInConfigs.push(index);

@@ -3,6 +3,8 @@ import { StorageService } from './storage';
 import { escapeTableCell, getPropertyByPath, formatValue } from './utils';
 import { ConfigParser } from './configParser';
 import { sortTagsByOrder } from './configManagerUtils';
+import { findAndMergeDocumentation } from './templatePath';
+import { PropertyDoc, AssociativeArrayMapping } from '@/types';
 
 export class MarkdownTableGenerator {
   private rootPath: string;
@@ -63,9 +65,18 @@ export class MarkdownTableGenerator {
       });
       markdown += '\n';
 
+      // 連想配列マッピングを取得
+      const associativeArrays: AssociativeArrayMapping[] = settings.associativeArrays || [];
+
       // 各プロパティの行を追加
       for (const propertyPath of allPropertyPaths) {
-        const doc = docs.properties[propertyPath];
+        // テンプレートドキュメントも考慮してドキュメントを検索・マージ
+        const doc = findAndMergeDocumentation(
+          propertyPath,
+          docs.properties as Record<string, PropertyDoc>,
+          associativeArrays,
+          configData
+        );
         const propertyName = escapeTableCell(propertyPath);
         const sortedTags = doc && doc.tags && doc.tags.length > 0
           ? sortTagsByOrder(doc.tags, availableTags)

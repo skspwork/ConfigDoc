@@ -41,7 +41,8 @@ export async function GET() {
       data: {
         ...metadata,
         availableTags: settings.availableTags || ['required', 'nullable', 'string', 'number', 'boolean'],
-        fields: settings.fields || { '説明': '' }
+        fields: settings.fields || { '説明': '' },
+        associativeArrays: settings.associativeArrays || []
       }
     });
   } catch (error) {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { configFilePaths, availableTags, fields } = body;
+    const { configFilePaths, availableTags, fields, associativeArrays } = body;
 
     const rootPath = getRootPath();
     const fsService = new FileSystemService(rootPath);
@@ -117,7 +118,8 @@ export async function POST(request: NextRequest) {
       configFiles: relativePaths,
       availableTags: availableTags || existingSettings?.availableTags || ['required', 'nullable', 'string', 'number', 'boolean'],
       fields: fields !== undefined ? fields : (existingSettings?.fields || { '説明': '' }),
-      export: existingSettings?.export || {}
+      export: existingSettings?.export || {},
+      associativeArrays: associativeArrays !== undefined ? associativeArrays : (existingSettings?.associativeArrays || [])
     };
 
     await fsService.saveProjectSettings(newSettings);

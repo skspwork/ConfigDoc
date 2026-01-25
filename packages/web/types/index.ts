@@ -25,6 +25,8 @@ export interface PropertyDoc {
   tags?: string[];                 // タグ（例: ["required", "string", "int", "bool"]）
   fields: Record<string, string>;  // フィールド（デフォルト: { "説明": "" }）
   modifiedAt: string;
+  isTemplate?: boolean;            // テンプレートフラグ（配列要素に水平展開）
+  sourceTemplatePath?: string;     // テンプレート作成元の具体的パス（追跡用）
 }
 
 export interface ConfigTreeNode {
@@ -48,6 +50,13 @@ export type ExportFormat = 'html' | 'markdown' | 'markdown-table';
 // デフォルトフィールド
 export const DEFAULT_FIELDS: Record<string, string> = { '説明': '' };
 
+// 連想配列マッピング（オブジェクトを配列として扱う設定）
+export interface AssociativeArrayMapping {
+  basePath: string;                // 例: "AppSettings:Fields"
+  description?: string;            // 説明（オプション）
+  createdAt: string;               // 登録日時
+}
+
 // プロジェクト設定（project_settings.json）- チーム共有
 export interface ProjectSettings {
   projectName: string;
@@ -58,6 +67,7 @@ export interface ProjectSettings {
     fileName?: string;             // 出力ファイル名（拡張子なし、デフォルト: config-doc）
     outputDir?: string;            // 出力先フォルダ（相対パス、デフォルト: .config_doc/output）
   };
+  associativeArrays?: AssociativeArrayMapping[];  // 連想配列として登録されたパス
 }
 
 // ユーザ個別設定（.user_settings.json）

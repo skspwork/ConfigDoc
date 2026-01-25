@@ -11,10 +11,14 @@ interface PropertyEditorProps {
   hasUnsavedChanges: boolean;
   availableTags: string[];
   projectFields: Record<string, string>;
+  selectedNodeType?: 'object' | 'array' | 'string' | 'number' | 'boolean';
+  isAssociativeArray?: boolean;
+  isDescendantOfAssociativeArray?: boolean;
   onEditingDocChange: (doc: PropertyDoc) => void;
   onAvailableTagsChange: (tags: string[]) => void;
   onProjectFieldsChange: (fields: Record<string, string>) => void;
   onSave: () => void;
+  onToggleAssociativeArray?: (path: string, isAssociative: boolean) => void;
 }
 
 export function PropertyEditor({
@@ -23,11 +27,19 @@ export function PropertyEditor({
   hasUnsavedChanges,
   availableTags,
   projectFields,
+  selectedNodeType,
+  isAssociativeArray = false,
+  isDescendantOfAssociativeArray = false,
   onEditingDocChange,
   onAvailableTagsChange,
   onProjectFieldsChange,
-  onSave
+  onSave,
+  onToggleAssociativeArray
 }: PropertyEditorProps) {
+  // パスが配列インデックスを含むか、または連想配列の子孫かどうかを判定
+  const hasArrayIndex = /\[\d+\]/.test(selectedPath);
+  // テンプレートオプションを表示するかどうか（配列要素または連想配列の子孫）
+  const showTemplateOption = hasArrayIndex || isDescendantOfAssociativeArray;
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-190px)] hover:shadow-2xl transition-shadow duration-300">
       <div className="flex items-center gap-2 mb-4">
@@ -70,6 +82,47 @@ export function PropertyEditor({
               }}
               onUpdateProjectFields={onProjectFieldsChange}
             />
+
+            {/* テンプレート・連想配列オプション */}
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              {/* テンプレートオプション（配列要素または連想配列の子孫の場合に表示） */}
+              {showTemplateOption && (
+                <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <input
+                    type="checkbox"
+                    id="isTemplate"
+                    checked={editingDoc.isTemplate || false}
+                    onChange={(e) => onEditingDocChange({ ...editingDoc, isTemplate: e.target.checked })}
+                    className="mt-0.5 w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="isTemplate" className="text-sm text-purple-800 cursor-pointer">
+                    <span className="font-medium">テンプレートとして保存</span>
+                    <span className="block text-xs text-purple-600 mt-0.5">
+                      同じ構造の全配列要素にこのドキュメントを適用します
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* 連想配列オプション（オブジェクトタイプの場合のみ表示） */}
+              {selectedNodeType === 'object' && onToggleAssociativeArray && (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <input
+                    type="checkbox"
+                    id="isAssociativeArray"
+                    checked={isAssociativeArray}
+                    onChange={(e) => onToggleAssociativeArray(selectedPath, e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <label htmlFor="isAssociativeArray" className="text-sm text-amber-800 cursor-pointer">
+                    <span className="font-medium">連想配列として登録</span>
+                    <span className="block text-xs text-amber-600 mt-0.5">
+                      キー名を配列インデックスとして扱い、テンプレート展開の対象にします
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 保存ボタン（下部固定） */}

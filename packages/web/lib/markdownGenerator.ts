@@ -3,6 +3,8 @@ import { StorageService } from './storage';
 import { ConfigParser } from './configParser';
 import { sortTagsByOrder } from './configManagerUtils';
 import { getPropertyByPath } from './utils';
+import { findAndMergeDocumentation } from './templatePath';
+import { PropertyDoc } from '@/types';
 
 export class MarkdownGenerator {
   private rootPath: string;
@@ -52,8 +54,17 @@ export class MarkdownGenerator {
 
       markdown += '### プロパティ一覧\n\n';
 
+      // 連想配列マッピングを取得
+      const associativeArrays = settings.associativeArrays || [];
+
       for (const propertyPath of allPropertyPaths) {
-        const doc = docs.properties[propertyPath];
+        // テンプレートドキュメントも考慮してドキュメントを検索・マージ
+        const doc = findAndMergeDocumentation(
+          propertyPath,
+          docs.properties as Record<string, PropertyDoc>,
+          associativeArrays,
+          configData
+        );
         const value = getPropertyByPath(configData, propertyPath);
 
         markdown += `#### \`${propertyPath}\`\n\n`;

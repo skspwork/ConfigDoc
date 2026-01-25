@@ -70,6 +70,24 @@ export class StorageService {
     };
   }
 
+  async deletePropertyDoc(
+    configFilePath: string,
+    propertyPath: string
+  ): Promise<boolean> {
+    const docsFileName = this.getDocsFileName(configFilePath);
+    const docs = await this.fs.loadConfigDocs(docsFileName);
+
+    if (!docs || !docs.properties[propertyPath]) {
+      return false;
+    }
+
+    delete docs.properties[propertyPath];
+    docs.lastModified = new Date().toISOString();
+
+    await this.fs.saveConfigDocs(docsFileName, docs);
+    return true;
+  }
+
   // 公開メソッド: docsファイル名を取得
   public getDocsFileName(configFilePath: string): string {
     // 相対パスに変換してから処理

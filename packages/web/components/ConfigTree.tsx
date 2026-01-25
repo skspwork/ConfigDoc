@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfigTreeNode, ConfigDocs } from '@/types';
-import { ChevronRightIcon, ChevronDownIcon, FileTextIcon } from 'lucide-react';
+import { ConfigTreeNode, ConfigDocs, AssociativeArrayMapping, PropertyDoc } from '@/types';
+import { ChevronRightIcon, ChevronDownIcon, FileTextIcon, LayersIcon, ListIcon } from 'lucide-react';
 import { ConfigParser } from '@/lib/configParser';
+import { findTemplateForPath, convertToWildcardBasePath } from '@/lib/templatePath';
 
 interface ConfigTreeProps {
   config: any;
@@ -11,6 +12,7 @@ interface ConfigTreeProps {
   onSelectProperty: (path: string) => void;
   onEditProperty: (path: string) => void;
   selectedPath?: string;
+  associativeArrays?: AssociativeArrayMapping[];
 }
 
 export function ConfigTree({
@@ -18,7 +20,8 @@ export function ConfigTree({
   docs,
   onSelectProperty,
   onEditProperty,
-  selectedPath
+  selectedPath,
+  associativeArrays = []
 }: ConfigTreeProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -57,11 +60,67 @@ export function ConfigTree({
     setExpandedNodes(new Set());
   };
 
-  // ドキュメントが有効な内容を持っているかチェック
-  const hasValidDocumentation = (path: string): boolean => {
-    const doc = docs.properties[path];
-    if (!doc) return false;
+  // パスがテンプレートのソースパスかどうかチェック
+  const isTemplateSourcePath = (path: string): boolean => {
+    // すべてのテンプレートドキュメントをチェック
+    for (const doc of Object.values(docs.properties)) {
+      if (doc.isTemplate && doc.sourceTemplatePath === path) {
+        return true;
+      }
+    }
+    return false;
+  };
 
+  // ドキュメントが有効な内容を持っているかチェック（テンプレートも考慮）
+  const hasValidDocumentation = (path: string): { hasDirectDoc: boolean; hasDoc: boolean; isTemplate: boolean; isInherited: boolean; isTemplateSource: boolean } => {
+    // このパスがテンプレートの作成元かチェック
+    const isSource = isTemplateSourcePath(path);
+
+    // 直接ドキュメントを確認
+    const directDoc = docs.properties[path];
+    const hasDirectContent = directDoc ? checkDocContent(directDoc) : false;
+
+    // テンプレートドキュメントを検索（直接ドキュメントは除外してテンプレートのみ検索）
+    const templateDoc = findTemplateForPath(
+      path,
+      docs.properties as Record<string, PropertyDoc>,
+      associativeArrays,
+      config
+    );
+    const hasTemplateContent = templateDoc ? checkDocContent(templateDoc) : false;
+
+    // 直接ドキュメントがある場合
+    if (directDoc) {
+      if (hasDirectContent) {
+        // 直接ドキュメントがテンプレートとしてマークされているか
+        // テンプレートからの継承もチェック（直接ドキュメント以外のテンプレートがあるか）
+        const isInheritedFromTemplate = hasTemplateContent && templateDoc !== directDoc && !isSource;
+        return {
+          hasDirectDoc: true,
+          hasDoc: true,
+          isTemplate: directDoc.isTemplate || false,
+          isInherited: isInheritedFromTemplate,
+          isTemplateSource: isSource
+        };
+      }
+      // コンテンツがなくてもisTemplateフラグがあればテンプレートとして表示
+      if (directDoc.isTemplate) {
+        return { hasDirectDoc: false, hasDoc: false, isTemplate: true, isInherited: false, isTemplateSource: isSource };
+      }
+    }
+
+    // 直接ドキュメントがない場合、テンプレートから継承
+    if (hasTemplateContent) {
+      // テンプレートから継承されたドキュメント
+      // ただし、このパスがテンプレート元の場合はisTemplateSourceをtrueにする
+      return { hasDirectDoc: false, hasDoc: true, isTemplate: false, isInherited: !isSource, isTemplateSource: isSource };
+    }
+
+    return { hasDirectDoc: false, hasDoc: false, isTemplate: false, isInherited: false, isTemplateSource: isSource };
+  };
+
+  // ドキュメントの内容があるかチェック
+  const checkDocContent = (doc: PropertyDoc): boolean => {
     // タグがあるか
     if (doc.tags && doc.tags.length > 0) return true;
 
@@ -76,10 +135,37 @@ export function ConfigTree({
     return false;
   };
 
+  // パスが連想配列として登録されているかチェック（ワイルドカードマッピングも対応）
+  const isAssociativeArrayPath = (path: string): boolean => {
+    // 直接一致をチェック
+    if (associativeArrays.some(mapping => mapping.basePath === path)) {
+      return true;
+    }
+
+    // ワイルドカード化されたパスでチェック
+    const wildcardedPath = convertToWildcardBasePath(path, associativeArrays, config);
+    if (wildcardedPath !== path && associativeArrays.some(mapping => mapping.basePath === wildcardedPath)) {
+      return true;
+    }
+
+    // ワイルドカードマッピングとのマッチをチェック
+    return associativeArrays.some(mapping => {
+      if (!mapping.basePath.includes('[*]')) return false;
+      // ワイルドカードパスを正規表現に変換
+      // 例: AppSettings:Fields[*]:Contents:Map → AppSettings:Fields:[^:]+:Contents:Map
+      const regexPattern = mapping.basePath
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')  // 特殊文字をエスケープ
+        .replace(/\\\[\\\*\\\]/g, ':[^:]+');     // [*] を :[^:]+ に変換
+      const regex = new RegExp(`^${regexPattern}$`);
+      return regex.test(path);
+    });
+  };
+
   const renderNode = (node: ConfigTreeNode, depth: number = 0) => {
-    const hasDoc = hasValidDocumentation(node.fullPath);
+    const docStatus = hasValidDocumentation(node.fullPath);
     const isExpanded = expandedNodes.has(node.fullPath);
     const isSelected = selectedPath === node.fullPath;
+    const isAssocArray = isAssociativeArrayPath(node.fullPath);
 
     return (
       <div key={node.fullPath}>
@@ -118,10 +204,32 @@ export function ConfigTree({
                 : {JSON.stringify(node.value)}
               </span>
             )}
-            {hasDoc && (
+            {/* ドキュメントバッジ（直接ドキュメントがあり、テンプレート元でない場合） */}
+            {docStatus.hasDirectDoc && !docStatus.isTemplate && !docStatus.isTemplateSource && (
               <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 border border-green-300 rounded-full">
                 <FileTextIcon className="w-3 h-3 text-green-600" />
                 <span className="text-xs text-green-700 font-medium">Doc</span>
+              </div>
+            )}
+            {/* テンプレートバッジ（テンプレートパスに直接保存されたもの、またはテンプレート元のパス） */}
+            {(docStatus.isTemplate || docStatus.isTemplateSource) && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 border border-purple-300 rounded-full">
+                <LayersIcon className="w-3 h-3 text-purple-600" />
+                <span className="text-xs text-purple-700 font-medium">Template</span>
+              </div>
+            )}
+            {/* 継承バッジ（テンプレートから継承、テンプレート元でない場合。直接Docと両方表示可能） */}
+            {docStatus.isInherited && !docStatus.isTemplateSource && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 border border-blue-300 rounded-full">
+                <FileTextIcon className="w-3 h-3 text-blue-600" />
+                <span className="text-xs text-blue-700 font-medium">Inherited</span>
+              </div>
+            )}
+            {/* 連想配列バッジ */}
+            {isAssocArray && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 border border-amber-300 rounded-full">
+                <ListIcon className="w-3 h-3 text-amber-600" />
+                <span className="text-xs text-amber-700 font-medium">連想配列</span>
               </div>
             )}
           </div>
