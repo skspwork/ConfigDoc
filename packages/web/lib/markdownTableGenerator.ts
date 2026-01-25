@@ -13,6 +13,87 @@ export class MarkdownTableGenerator {
     this.rootPath = rootPath;
   }
 
+  /**
+   * 単一ファイルのMarkdownテーブルを生成
+   */
+  async generateMarkdownTableForFile(filePath: string): Promise<string> {
+    const fsService = new FileSystemService(this.rootPath);
+    const storageService = new StorageService(fsService);
+
+    // プロジェクト設定を読み込む
+    const settings = await fsService.loadProjectSettings();
+    const fieldKeys = settings?.fields ? Object.keys(settings.fields) : [];
+    const availableTags = settings?.availableTags || [];
+    const associativeArrays: AssociativeArrayMapping[] = settings?.associativeArrays || [];
+
+    const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
+    const docs = await storageService.loadAllDocs(filePath);
+    const configData = await fsService.loadConfigFile(filePath);
+
+    let markdown = `# ${fileName}\n\n`;
+    markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
+    markdown += `最終更新: ${new Date().toLocaleString('ja-JP')}\n\n`;
+    markdown += '---\n\n';
+
+    // 設定ファイルから全プロパティを取得
+    const allPropertyPaths = ConfigParser.getAllPropertyPaths(configData);
+
+    if (allPropertyPaths.length === 0) {
+      markdown += '*プロパティがありません。*\n\n';
+    } else {
+      // テーブルヘッダー
+      markdown += '| プロパティ名 | タグ | 値 |';
+      fieldKeys.forEach(label => {
+        markdown += ` ${label} |`;
+      });
+      markdown += '\n';
+
+      markdown += '|-------------|------|-----|';
+      fieldKeys.forEach(() => {
+        markdown += '------|';
+      });
+      markdown += '\n';
+
+      // 各プロパティの行を追加
+      for (const propertyPath of allPropertyPaths) {
+        const doc = findAndMergeDocumentation(
+          propertyPath,
+          docs.properties as Record<string, PropertyDoc>,
+          associativeArrays,
+          configData
+        );
+        const propertyName = escapeTableCell(propertyPath);
+        const sortedTags = doc && doc.tags && doc.tags.length > 0
+          ? sortTagsByOrder(doc.tags, availableTags)
+          : [];
+        const tags = sortedTags.length > 0
+          ? escapeTableCell(sortedTags.map(tag => `\`${tag}\``).join(', '))
+          : '-';
+
+        const value = this.getPropertyValue(configData, propertyPath);
+        const valueStr = escapeTableCell(value);
+
+        markdown += `| ${propertyName} | ${tags} | ${valueStr} |`;
+
+        fieldKeys.forEach(label => {
+          const fieldValue = (doc && doc.fields && doc.fields[label]) || '-';
+          markdown += ` ${escapeTableCell(fieldValue)} |`;
+        });
+
+        markdown += '\n';
+      }
+
+      markdown += '\n';
+    }
+
+    markdown += `\n*このドキュメントは ConfigDoc により自動生成されました。*\n`;
+
+    return markdown;
+  }
+
+  /**
+   * 全ファイルをまとめた単一Markdownテーブルを生成（従来の動作）
+   */
   async generateMarkdownTable(): Promise<string> {
     const fsService = new FileSystemService(this.rootPath);
     const storageService = new StorageService(fsService);

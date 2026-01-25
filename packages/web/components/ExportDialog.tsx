@@ -30,7 +30,7 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
   }, [currentSettings]);
 
   // Markdown形式かどうか（ファイルごとに個別出力する形式）
-  const isMarkdownFormat = settings.format === 'markdown';
+  const isPerFileFormat = settings.format === 'markdown' || settings.format === 'markdown-table';
 
   // フォーマットに応じて出力先パスを決定
   const absoluteOutputPath = useMemo(() => {
@@ -39,14 +39,13 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
     const normalizedOutputDir = outputDir ? outputDir.replace(/\//g, '\\') : '';
     const baseDir = normalizedOutputDir ? `${normalized}\\${normalizedOutputDir}` : normalized;
 
-    // Markdown形式の場合はディレクトリのみ表示（ファイルごとに個別出力）
-    if (settings.format === 'markdown') {
+    // Markdown/Markdownテーブル形式の場合はディレクトリのみ表示（ファイルごとに個別出力）
+    if (settings.format === 'markdown' || settings.format === 'markdown-table') {
       return `${baseDir}\\{設定ファイル名}.md`;
     }
 
     const fileName = settings.fileName || 'config-doc';
-    const extension = settings.format === 'markdown-table' ? 'md' : 'html';
-    return `${baseDir}\\${fileName}.${extension}`;
+    return `${baseDir}\\${fileName}.html`;
   }, [settings.format, settings.fileName, settings.outputDir, rootPath]);
 
   if (!isOpen) return null;
@@ -107,25 +106,6 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
             </p>
           </div>
 
-          {/* ファイル名（Markdown形式以外のみ表示） */}
-          {!isMarkdownFormat && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ファイル名
-              </label>
-              <input
-                type="text"
-                value={settings.fileName ?? ''}
-                onChange={(e) => setSettings({ ...settings, fileName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="config-doc"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                拡張子なしのファイル名を指定します（空欄でconfig-doc、チーム共有設定）
-              </p>
-            </div>
-          )}
-
           {/* 出力形式 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -144,10 +124,29 @@ export function ExportDialog({ isOpen, onClose, onExport, currentSettings, rootP
               {settings.format === 'html'
                 ? 'スタイル付きのHTMLファイルとして出力します'
                 : settings.format === 'markdown-table'
-                ? 'Markdownテーブル形式で出力します（プロパティ名、説明、値、備考）'
+                ? '設定ファイルごとにMarkdownテーブル形式で出力します'
                 : '設定ファイルごとに個別のMarkdownファイルとして出力します'}
             </p>
           </div>
+
+          {/* ファイル名（HTML形式のみ表示） */}
+          {!isPerFileFormat && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ファイル名
+              </label>
+              <input
+                type="text"
+                value={settings.fileName ?? ''}
+                onChange={(e) => setSettings({ ...settings, fileName: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="config-doc"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                拡張子なしのファイル名を指定します（空欄でconfig-doc、チーム共有設定）
+              </p>
+            </div>
+          )}
 
           {/* 出力先パス */}
           <div>

@@ -66,20 +66,43 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // HTML/Markdownテーブル形式は従来通り単一ファイル
-    let content: string;
+    // Markdownテーブル形式もファイルごとに個別出力
     if (format === 'markdown-table') {
+      const settings = await fsService.loadProjectSettings();
+      if (!settings || settings.configFiles.length === 0) {
+        return NextResponse.json({
+          success: false,
+          error: 'ドキュメント化された設定ファイルがありません'
+        }, { status: 400 });
+      }
+
       const generator = new MarkdownTableGenerator(rootPath);
-      content = await generator.generateMarkdownTable();
-    } else {
-      // デフォルトはHTML
-      const generator = new HtmlGenerator(rootPath);
-      content = await generator.generateHtml();
+      const outputPaths: string[] = [];
+
+      for (const configFilePath of settings.configFiles) {
+        // JSONファイル名から拡張子を除いてMarkdownファイル名を生成
+        const configFileName = configFilePath.split(/[/\\]/).pop() || 'config.json';
+        const markdownFileName = configFileName.replace(/\.json$/i, '.md');
+        const outputPath = path.join(outputDirPath, markdownFileName);
+
+        const content = await generator.generateMarkdownTableForFile(configFilePath);
+        await fs.writeFile(outputPath, content, 'utf-8');
+        outputPaths.push(outputPath);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Markdownテーブルファイルを${outputPaths.length}件生成しました`,
+        outputPaths
+      });
     }
 
+    // HTML形式は従来通り単一ファイル
+    const generator = new HtmlGenerator(rootPath);
+    const content = await generator.generateHtml();
+
     // 出力ファイル名を決定（拡張子付き）
-    const extension = format === 'markdown-table' ? 'md' : 'html';
-    const outputFileName = `${fileName}.${extension}`;
+    const outputFileName = `${fileName}.html`;
 
     // 出力パス
     const outputPath = path.join(outputDirPath, outputFileName);
@@ -89,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${format === 'markdown-table' ? 'Markdownテーブル' : 'HTML'}ファイルを生成しました`,
+      message: 'HTMLファイルを生成しました',
       outputPath
     });
   } catch (error) {

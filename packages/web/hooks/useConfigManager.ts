@@ -589,7 +589,11 @@ export function useConfigManager(): UseConfigManagerReturn {
           body: JSON.stringify({ settings: updatedSettings })
         });
 
-        showToast(`エクスポートしました: ${result.outputPath}`);
+        // 複数ファイル出力の場合はフォルダパスを表示、単一ファイルの場合はファイルパスを表示
+        const displayPath = result.outputPaths
+          ? result.outputPaths[0]?.replace(/[/\\][^/\\]+$/, '') || settings.outputDir || '.'
+          : result.outputPath;
+        showToast(`エクスポートしました: ${displayPath}`);
       } else {
         showToast('エクスポートに失敗しました: ' + result.error, 'error');
       }
