@@ -306,6 +306,87 @@ describe('templatePath', () => {
     });
   });
 
+  describe('normalizeAssociativeArrayPath - 連想配列の値が配列の場合', () => {
+    const configData = {
+      Fields: {
+        Field1: [{ Name: 'a' }, { Name: 'b' }],
+        Field2: [{ Name: 'c' }, { Name: 'd' }]
+      }
+    };
+
+    const mappings: AssociativeArrayMapping[] = [
+      { basePath: 'Fields', createdAt: '' }
+    ];
+
+    test('連想配列の値が配列の場合、キー名と配列インデックスを分離して変換する', () => {
+      // Fields:Field1[0]:Name → Fields[0][0]:Name
+      expect(normalizeAssociativeArrayPath(
+        'Fields:Field1[0]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[0][0]:Name');
+
+      // Fields:Field1[1]:Name → Fields[0][1]:Name
+      expect(normalizeAssociativeArrayPath(
+        'Fields:Field1[1]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[0][1]:Name');
+
+      // Fields:Field2[0]:Name → Fields[1][0]:Name
+      expect(normalizeAssociativeArrayPath(
+        'Fields:Field2[0]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[1][0]:Name');
+
+      // Fields:Field2[1]:Name → Fields[1][1]:Name
+      expect(normalizeAssociativeArrayPath(
+        'Fields:Field2[1]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[1][1]:Name');
+    });
+
+    test('配列インデックスのない通常のパスも正常に変換する', () => {
+      // 連想配列の値が配列でも、インデックスなしのパスは従来通り
+      expect(normalizeAssociativeArrayPath(
+        'Fields:Field1',
+        mappings,
+        configData
+      )).toBe('Fields[0]');
+    });
+  });
+
+  describe('getTemplatePathForConcrete - 連想配列の値が配列の場合', () => {
+    const configData = {
+      Fields: {
+        Field1: [{ Name: 'a' }],
+        Field2: [{ Name: 'c' }]
+      }
+    };
+
+    const mappings: AssociativeArrayMapping[] = [
+      { basePath: 'Fields', createdAt: '' }
+    ];
+
+    test('連想配列+配列のパスをテンプレートパスに変換する', () => {
+      // Fields:Field1[0]:Name → Fields[*][*]:Name
+      expect(getTemplatePathForConcrete(
+        'Fields:Field1[0]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[*][*]:Name');
+
+      // Fields:Field2[0]:Name → Fields[*][*]:Name
+      expect(getTemplatePathForConcrete(
+        'Fields:Field2[0]:Name',
+        mappings,
+        configData
+      )).toBe('Fields[*][*]:Name');
+    });
+  });
+
   describe('normalizeAssociativeArrayPath - ワイルドカード付きマッピング', () => {
     const configData = {
       AppSettings: {

@@ -131,12 +131,21 @@ export function normalizeAssociativeArrayPath(
         // ベースパス以降の部分を取得
         const remainder = normalizedPath.substring(normalizedBasePath.length + 1);
         const parts = remainder.split(':');
-        const keyName = parts[0];
+        const firstPart = parts[0];
 
         // 既にインデックス形式になっている場合はスキップ
-        if (keyName.match(/^\[\d+\]$/)) {
+        if (firstPart.match(/^\[\d+\]/)) {
           continue;
         }
+
+        // キー名と配列インデックスを分離（例: "Field1[0]" → "Field1", "[0]"）
+        // これにより連想配列の値が配列の場合にも対応
+        const keyNameMatch = firstPart.match(/^([^\[]+)(\[.+)?$/);
+        if (!keyNameMatch) {
+          continue;
+        }
+        const keyName = keyNameMatch[1];
+        const arrayIndexPart = keyNameMatch[2] || '';
 
         // 連想配列オブジェクトを取得（元のconfigDataからオリジナルのbasePathで取得）
         const associativeObj = getValueByPath(configData, basePath);
@@ -145,9 +154,9 @@ export function normalizeAssociativeArrayPath(
           const keyIndex = keys.indexOf(keyName);
 
           if (keyIndex >= 0) {
-            // キー名をインデックスに置換
+            // キー名をインデックスに置換（配列インデックスがある場合は保持）
             const restOfPath = parts.slice(1).join(':');
-            normalizedPath = `${normalizedBasePath}[${keyIndex}]${restOfPath ? ':' + restOfPath : ''}`;
+            normalizedPath = `${normalizedBasePath}[${keyIndex}]${arrayIndexPart}${restOfPath ? ':' + restOfPath : ''}`;
             changed = true;
             break; // 変換が発生したら最初からやり直す
           }
@@ -257,11 +266,16 @@ function applyWildcardMapping(
       if (keyInfo) {
         const associativeObj = getValueByPath(configData, currentConfigPath);
         if (associativeObj && typeof associativeObj === 'object' && !Array.isArray(associativeObj)) {
+          // キー名と配列インデックスを分離（例: "Field1[0]" → "Field1", "[0]"）
+          const keyMatch = keyInfo.key.match(/^([^\[]+)(\[.+)?$/);
+          const actualKeyName = keyMatch ? keyMatch[1] : keyInfo.key;
+          const arrayIndexPart = keyMatch ? (keyMatch[2] || '') : '';
+
           const keys = Object.keys(associativeObj);
-          const keyIndex = keys.indexOf(keyInfo.key);
+          const keyIndex = keys.indexOf(actualKeyName);
           if (keyIndex >= 0) {
-            resultPath = resultPath ? `${resultPath}:${baseKey}[${keyIndex}]` : `${baseKey}[${keyIndex}]`;
-            currentConfigPath = `${currentConfigPath}:${keyInfo.key}`;
+            resultPath = resultPath ? `${resultPath}:${baseKey}[${keyIndex}]${arrayIndexPart}` : `${baseKey}[${keyIndex}]${arrayIndexPart}`;
+            currentConfigPath = `${currentConfigPath}:${actualKeyName}`;
           } else {
             return path; // キーが見つからない
           }
@@ -278,20 +292,29 @@ function applyWildcardMapping(
   // 残りの部分を処理（連想配列の値のキー）
   if (remainder) {
     const remainderParts = remainder.split(':');
-    const firstKey = remainderParts[0];
+    const firstPart = remainderParts[0];
 
     // 最後の連想配列オブジェクトを取得
     const lastAssocObj = getValueByPath(configData, currentConfigPath);
     if (lastAssocObj && typeof lastAssocObj === 'object' && !Array.isArray(lastAssocObj)) {
-      const keys = Object.keys(lastAssocObj);
-      const keyIndex = keys.indexOf(firstKey);
-      if (keyIndex >= 0) {
-        resultPath = `${resultPath}[${keyIndex}]`;
-        if (remainderParts.length > 1) {
-          resultPath = `${resultPath}:${remainderParts.slice(1).join(':')}`;
+      // キー名と配列インデックスを分離（例: "Field1[0]" → "Field1", "[0]"）
+      const keyNameMatch = firstPart.match(/^([^\[]+)(\[.+)?$/);
+      if (keyNameMatch) {
+        const keyName = keyNameMatch[1];
+        const arrayIndexPart = keyNameMatch[2] || '';
+
+        const keys = Object.keys(lastAssocObj);
+        const keyIndex = keys.indexOf(keyName);
+        if (keyIndex >= 0) {
+          resultPath = `${resultPath}[${keyIndex}]${arrayIndexPart}`;
+          if (remainderParts.length > 1) {
+            resultPath = `${resultPath}:${remainderParts.slice(1).join(':')}`;
+          }
+        } else {
+          // キーがインデックス形式の場合はそのまま追加
+          resultPath = `${resultPath}:${remainder}`;
         }
       } else {
-        // キーがインデックス形式の場合はそのまま追加
         resultPath = `${resultPath}:${remainder}`;
       }
     } else {
