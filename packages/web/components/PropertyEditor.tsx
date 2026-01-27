@@ -1,6 +1,6 @@
 'use client';
 
-import { SaveIcon, FileTextIcon } from 'lucide-react';
+import { SaveIcon, FileTextIcon, CopyIcon, ClipboardPasteIcon } from 'lucide-react';
 import { PropertyDoc } from '@/types';
 import { TagEditor } from '@/components/TagEditor';
 import { FieldsEditor } from '@/components/FieldsEditor';
@@ -19,6 +19,9 @@ interface PropertyEditorProps {
   onProjectFieldsChange: (fields: Record<string, string>) => void;
   onSave: () => void;
   onToggleAssociativeArray?: (path: string, isAssociative: boolean) => void;
+  onCopy: () => void;
+  onPaste: () => void;
+  canPaste: boolean;
 }
 
 export function PropertyEditor({
@@ -34,7 +37,10 @@ export function PropertyEditor({
   onAvailableTagsChange,
   onProjectFieldsChange,
   onSave,
-  onToggleAssociativeArray
+  onToggleAssociativeArray,
+  onCopy,
+  onPaste,
+  canPaste
 }: PropertyEditorProps) {
   // パスが配列インデックスを含むか、または連想配列の子孫かどうかを判定
   const hasArrayIndex = /\[\d+\]/.test(selectedPath);
@@ -125,20 +131,46 @@ export function PropertyEditor({
             </div>
           </div>
 
-          {/* 保存ボタン（下部固定） */}
+          {/* ボタン（下部固定） */}
           <div className="flex-shrink-0 pt-4 border-t border-gray-200">
-            <button
-              onClick={onSave}
-              disabled={!hasUnsavedChanges}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg shadow-md transition-all duration-200 transform ${
-                hasUnsavedChanges
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-lg cursor-pointer'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <SaveIcon className="w-5 h-5" />
-              <span className="font-medium">保存</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* コピーボタン */}
+              <button
+                onClick={onCopy}
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                title="プロパティ詳細をコピー"
+              >
+                <CopyIcon className="w-4 h-4" />
+                コピー
+              </button>
+              {/* ペーストボタン */}
+              <button
+                onClick={onPaste}
+                disabled={!canPaste}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors shadow-sm ${
+                  canPaste
+                    ? 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+                }`}
+                title="プロパティ詳細を貼り付け"
+              >
+                <ClipboardPasteIcon className="w-4 h-4" />
+                ペースト
+              </button>
+              {/* 保存ボタン */}
+              <button
+                onClick={onSave}
+                disabled={!hasUnsavedChanges}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg shadow-md transition-all duration-200 ${
+                  hasUnsavedChanges
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-lg cursor-pointer'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <SaveIcon className="w-5 h-5" />
+                <span className="font-medium">保存</span>
+              </button>
+            </div>
           </div>
         </div>
       ) : (

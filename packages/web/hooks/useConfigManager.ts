@@ -18,6 +18,12 @@ interface Toast {
   type: ToastType;
 }
 
+// クリップボード用の型
+interface PropertyClipboard {
+  tags: string[];
+  fields: Record<string, string>;
+}
+
 interface UseConfigManagerReturn {
   // 状態
   loadedConfigs: LoadedConfig[];
@@ -35,6 +41,7 @@ interface UseConfigManagerReturn {
   toasts: Toast[];
   rootPath: string;
   isInitialized: boolean;
+  clipboard: PropertyClipboard | null;
 
   // アクション
   setActiveConfigIndex: (index: number) => void;
@@ -57,6 +64,8 @@ interface UseConfigManagerReturn {
   resetSelection: () => void;
   isAssociativeArray: (path: string) => boolean;
   isDescendantOfAssociativeArray: (path: string) => boolean;
+  handleCopyProperty: () => void;
+  handlePasteProperty: () => void;
 }
 
 export function useConfigManager(): UseConfigManagerReturn {
@@ -88,6 +97,9 @@ export function useConfigManager(): UseConfigManagerReturn {
 
   // トースト通知
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // クリップボード（コピー＆ペースト用）
+  const [clipboard, setClipboard] = useState<PropertyClipboard | null>(null);
 
   const activeConfig = loadedConfigs[activeConfigIndex];
 
@@ -768,6 +780,40 @@ export function useConfigManager(): UseConfigManagerReturn {
     setSelectedNodeType(undefined);
   }, []);
 
+  // プロパティ詳細をコピー
+  const handleCopyProperty = useCallback(() => {
+    if (!editingDoc) return;
+    setClipboard({
+      tags: [...(editingDoc.tags || [])],
+      fields: { ...(editingDoc.fields || {}) }
+    });
+    showToast('プロパティ詳細をコピーしました');
+  }, [editingDoc, showToast]);
+
+  // プロパティ詳細をペースト
+  const handlePasteProperty = useCallback(() => {
+    if (!clipboard || !editingDoc) return;
+
+    // 利用可能なタグのみ保持
+    const validTags = clipboard.tags.filter(tag => availableTags.includes(tag));
+
+    // projectFieldsに定義されたフィールドのみ適用
+    const validFields: Record<string, string> = {};
+    for (const key of Object.keys(projectFields)) {
+      validFields[key] = clipboard.fields[key] || '';
+    }
+
+    const pastedDoc: PropertyDoc = {
+      ...editingDoc,
+      tags: validTags,
+      fields: validFields
+    };
+
+    setEditingDoc(pastedDoc);
+    setHasUnsavedChanges(checkForChanges(pastedDoc, originalDoc));
+    showToast('プロパティ詳細を貼り付けました');
+  }, [clipboard, editingDoc, availableTags, projectFields, originalDoc, checkForChanges, showToast]);
+
   // 連想配列かどうかをチェック
   // ワイルドカード付きbasePathにも対応
   const isAssociativeArray = useCallback((path: string): boolean => {
@@ -904,6 +950,9 @@ export function useConfigManager(): UseConfigManagerReturn {
     checkForChanges,
     resetSelection,
     isAssociativeArray,
-    isDescendantOfAssociativeArray
+    isDescendantOfAssociativeArray,
+    clipboard,
+    handleCopyProperty,
+    handlePasteProperty
   };
 }

@@ -47,7 +47,10 @@ export default function Home() {
     checkForChanges,
     resetSelection,
     isAssociativeArray,
-    isDescendantOfAssociativeArray
+    isDescendantOfAssociativeArray,
+    clipboard,
+    handleCopyProperty,
+    handlePasteProperty
   } = useConfigManager();
 
   return (
@@ -111,6 +114,9 @@ export default function Home() {
               onProjectFieldsChange={handleProjectFieldsChange}
               onSave={handleSaveProperty}
               onToggleAssociativeArray={handleToggleAssociativeArray}
+              onCopy={handleCopyProperty}
+              onPaste={handlePasteProperty}
+              canPaste={clipboard !== null}
             />
           </div>
         )}
