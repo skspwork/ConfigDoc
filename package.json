@@ -1,6 +1,6 @@
 {
   "name": "@skspwork/config-doc",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Interactive documentation tool for JSON configuration files (appsettings.json)",
   "keywords": [
     "config",
@@ -43,7 +43,7 @@
   "scripts": {
     "build": "cd packages/web && npm install && npm run build && cd ../.. && node scripts/prepare-standalone.js",
     "prepublishOnly": "npm run build",
-    "test:publish": "npm run build && npm pack && npx skspwork-config-doc-2.0.7.tgz",
+    "test:publish": "npm run build && npm pack && npx skspwork-config-doc-2.0.8.tgz",
     "unlink": "npm unlink -g @skspwork/config-doc"
   }
 }
