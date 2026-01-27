@@ -66,6 +66,7 @@ interface UseConfigManagerReturn {
   isDescendantOfAssociativeArray: (path: string) => boolean;
   handleCopyProperty: () => void;
   handlePasteProperty: () => void;
+  handleDeleteProperty: () => Promise<void>;
 }
 
 export function useConfigManager(): UseConfigManagerReturn {
@@ -814,6 +815,79 @@ export function useConfigManager(): UseConfigManagerReturn {
     showToast('プロパティ詳細を貼り付けました');
   }, [clipboard, editingDoc, availableTags, projectFields, originalDoc, checkForChanges, showToast]);
 
+  // プロパティ詳細を削除
+  const handleDeleteProperty = useCallback(async () => {
+    if (!editingDoc || !activeConfig || !selectedPath) return;
+
+    // 確認ダイアログ
+    if (!confirm('このプロパティの詳細を削除しますか？')) {
+      return;
+    }
+
+    try {
+      // APIで削除
+      const response = await fetch('/api/config/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          configFilePath: activeConfig.filePath,
+          propertyPath: selectedPath
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // ローカル状態を更新
+        setLoadedConfigs(prev => prev.map((config, idx) => {
+          if (idx !== activeConfigIndex) return config;
+
+          const updatedProperties = { ...config.docs.properties };
+
+          // 直接パスのドキュメントを削除
+          delete updatedProperties[selectedPath];
+
+          // このパスがsourceTemplatePathとして記録されているテンプレートも削除
+          for (const [docPath, doc] of Object.entries(updatedProperties)) {
+            if (doc.isTemplate && doc.sourceTemplatePath === selectedPath) {
+              delete updatedProperties[docPath];
+              break;
+            }
+          }
+
+          return {
+            ...config,
+            docs: {
+              ...config.docs,
+              properties: updatedProperties
+            }
+          };
+        }));
+
+        // 編集状態をリセット
+        const newDoc: PropertyDoc = {
+          path: selectedPath,
+          tags: [],
+          fields: { ...projectFields },
+          modifiedAt: new Date().toISOString()
+        };
+        setEditingDoc(newDoc);
+        setOriginalDoc(newDoc);
+        setHasUnsavedChanges(false);
+
+        showToast('プロパティ詳細を削除しました');
+
+        if (exportSettings?.autoExport) {
+          await handleAutoExport();
+        }
+      } else {
+        showToast('削除に失敗しました: ' + result.error, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      showToast('削除中にエラーが発生しました', 'error');
+    }
+  }, [activeConfig, activeConfigIndex, editingDoc, exportSettings?.autoExport, handleAutoExport, projectFields, selectedPath, showToast]);
+
   // 連想配列かどうかをチェック
   // ワイルドカード付きbasePathにも対応
   const isAssociativeArray = useCallback((path: string): boolean => {
@@ -953,6 +1027,7 @@ export function useConfigManager(): UseConfigManagerReturn {
     isDescendantOfAssociativeArray,
     clipboard,
     handleCopyProperty,
-    handlePasteProperty
+    handlePasteProperty,
+    handleDeleteProperty
   };
 }

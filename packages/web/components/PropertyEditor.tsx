@@ -1,6 +1,6 @@
 'use client';
 
-import { SaveIcon, FileTextIcon, CopyIcon, ClipboardPasteIcon } from 'lucide-react';
+import { SaveIcon, FileTextIcon, CopyIcon, ClipboardPasteIcon, Trash2Icon } from 'lucide-react';
 import { PropertyDoc } from '@/types';
 import { TagEditor } from '@/components/TagEditor';
 import { FieldsEditor } from '@/components/FieldsEditor';
@@ -22,6 +22,8 @@ interface PropertyEditorProps {
   onCopy: () => void;
   onPaste: () => void;
   canPaste: boolean;
+  onDelete: () => void;
+  hasExistingDoc: boolean;
 }
 
 export function PropertyEditor({
@@ -40,7 +42,9 @@ export function PropertyEditor({
   onToggleAssociativeArray,
   onCopy,
   onPaste,
-  canPaste
+  canPaste,
+  onDelete,
+  hasExistingDoc
 }: PropertyEditorProps) {
   // パスが配列インデックスを含むか、または連想配列の子孫かどうかを判定
   const hasArrayIndex = /\[\d+\]/.test(selectedPath);
@@ -48,11 +52,37 @@ export function PropertyEditor({
   const showTemplateOption = hasArrayIndex || isDescendantOfAssociativeArray;
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col max-h-[calc(100vh-190px)] hover:shadow-2xl transition-shadow duration-300">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-          <SaveIcon className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <SaveIcon className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
         </div>
-        <h2 className="text-xl font-bold text-gray-800">プロパティ詳細</h2>
+        {/* コピー・ペーストボタン（右上） */}
+        {selectedPath && editingDoc && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onCopy}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="プロパティ詳細をコピー"
+            >
+              <CopyIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onPaste}
+              disabled={!canPaste}
+              className={`p-2 rounded-lg transition-colors ${
+                canPaste
+                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title="プロパティ詳細を貼り付け"
+            >
+              <ClipboardPasteIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedPath && editingDoc ? (
@@ -134,28 +164,19 @@ export function PropertyEditor({
           {/* ボタン（下部固定） */}
           <div className="flex-shrink-0 pt-4 border-t border-gray-200">
             <div className="flex items-center gap-2">
-              {/* コピーボタン */}
+              {/* 削除ボタン */}
               <button
-                onClick={onCopy}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                title="プロパティ詳細をコピー"
-              >
-                <CopyIcon className="w-4 h-4" />
-                コピー
-              </button>
-              {/* ペーストボタン */}
-              <button
-                onClick={onPaste}
-                disabled={!canPaste}
+                onClick={onDelete}
+                disabled={!hasExistingDoc}
                 className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors shadow-sm ${
-                  canPaste
-                    ? 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                  hasExistingDoc
+                    ? 'text-red-600 bg-white border border-red-300 hover:bg-red-50'
                     : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
                 }`}
-                title="プロパティ詳細を貼り付け"
+                title="プロパティ詳細を削除"
               >
-                <ClipboardPasteIcon className="w-4 h-4" />
-                ペースト
+                <Trash2Icon className="w-4 h-4" />
+                削除
               </button>
               {/* 保存ボタン */}
               <button

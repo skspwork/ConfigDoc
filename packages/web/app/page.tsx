@@ -50,8 +50,12 @@ export default function Home() {
     isDescendantOfAssociativeArray,
     clipboard,
     handleCopyProperty,
-    handlePasteProperty
+    handlePasteProperty,
+    handleDeleteProperty
   } = useConfigManager();
+
+  // 選択中のパスに既存のドキュメントがあるかどうか
+  const hasExistingDoc = !!(selectedPath && activeConfig?.docs.properties[selectedPath]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -117,6 +121,8 @@ export default function Home() {
               onCopy={handleCopyProperty}
               onPaste={handlePasteProperty}
               canPaste={clipboard !== null}
+              onDelete={handleDeleteProperty}
+              hasExistingDoc={hasExistingDoc}
             />
           </div>
         )}

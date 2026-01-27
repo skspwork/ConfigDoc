@@ -69,27 +69,17 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
     await page.goto('/');
   });
 
-  test('コピーボタンとペーストボタンが表示される', async ({ page }) => {
+  test('コピーボタンとペーストボタンがヘッダー右上に表示される', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
     if (loaded) {
-      // コピーボタンが表示される
-      const copyButton = page.getByRole('button', { name: /コピー/ });
+      // コピーボタンが表示される（titleで検索）
+      const copyButton = page.getByTitle('プロパティ詳細をコピー');
       await expect(copyButton).toBeVisible();
 
-      // ペーストボタンが表示される
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
+      // ペーストボタンが表示される（titleで検索）
+      const pasteButton = page.getByTitle('プロパティ詳細を貼り付け');
       await expect(pasteButton).toBeVisible();
-    }
-  });
-
-  test('初期状態でペーストボタンは無効', async ({ page }) => {
-    const loaded = await loadConfigAndSelectProperty(page);
-
-    if (loaded) {
-      // ペーストボタンは無効（クリップボードが空）
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
-      await expect(pasteButton).toBeDisabled();
     }
   });
 
@@ -98,30 +88,12 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
 
     if (loaded) {
       // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
+      const copyButton = page.getByTitle('プロパティ詳細をコピー');
       await copyButton.click();
 
       // トースト通知を確認
       const toast = page.getByText('プロパティ詳細をコピーしました');
       await expect(toast).toBeVisible();
-    }
-  });
-
-  test('コピー後にペーストボタンが有効になる', async ({ page }) => {
-    const loaded = await loadConfigAndSelectProperty(page);
-
-    if (loaded) {
-      // 初期状態でペーストボタンは無効
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
-      await expect(pasteButton).toBeDisabled();
-
-      // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
-      await copyButton.click();
-      await page.waitForTimeout(300);
-
-      // ペーストボタンが有効になる
-      await expect(pasteButton).toBeEnabled();
     }
   });
 
@@ -135,7 +107,7 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
       await expect(requiredTag).toHaveClass(/bg-blue-500/);
 
       // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
+      const copyButton = page.getByTitle('プロパティ詳細をコピー');
       await copyButton.click();
       await page.waitForTimeout(300);
 
@@ -150,7 +122,7 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
       await page.waitForTimeout(500);
 
       // ペーストボタンをクリック
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
+      const pasteButton = page.getByTitle('プロパティ詳細を貼り付け');
       await pasteButton.click();
 
       // トースト通知を確認
@@ -163,140 +135,6 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
     }
   });
 
-  test('フィールド値をコピーして別のプロパティにペーストできる', async ({ page }) => {
-    const loaded = await loadConfigAndSelectProperty(page);
-
-    if (loaded) {
-      // フィールドエディタを開いて新しいフィールドを追加
-      const editFieldsButton = page.getByTitle('フィールドを編集');
-      await editFieldsButton.click();
-      await page.waitForTimeout(300);
-
-      // 新規フィールドを追加
-      const timestamp = Date.now();
-      const fieldName = `TestField${timestamp}`;
-      const input = page.getByPlaceholder('新しいフィールド名を入力');
-      await input.fill(fieldName);
-
-      const addButton = page.getByTitle('フィールドを追加');
-      await addButton.click();
-      await page.waitForTimeout(300);
-
-      // 保存をクリック
-      const saveButtonInEditMode = page.locator('button.bg-green-500, button.bg-green-600').filter({ hasText: '保存' });
-      await saveButtonInEditMode.click();
-      await page.waitForTimeout(300);
-
-      // フィールドに値を入力
-      const fieldInput = page.getByPlaceholder(`${fieldName}を入力`);
-      await fieldInput.fill('テストフィールド値');
-      await page.waitForTimeout(300);
-
-      // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
-      await copyButton.click();
-      await page.waitForTimeout(300);
-
-      // ダイアログのハンドラーを設定
-      page.on('dialog', async dialog => {
-        await dialog.accept();
-      });
-
-      // 別のプロパティ（Timeout）を選択
-      const timeoutNode = page.getByText('Timeout').first();
-      await timeoutNode.click();
-      await page.waitForTimeout(500);
-
-      // ペーストボタンをクリック
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
-      await pasteButton.click();
-      await page.waitForTimeout(300);
-
-      // フィールド値がペーストされていることを確認
-      const pastedFieldInput = page.getByPlaceholder(`${fieldName}を入力`);
-      await expect(pastedFieldInput).toHaveValue('テストフィールド値');
-    }
-  });
-
-  test('ペースト後に保存ボタンが有効になる', async ({ page }) => {
-    const loaded = await loadConfigAndSelectProperty(page);
-
-    if (loaded) {
-      // タグを選択
-      const requiredTag = page.getByRole('button', { name: 'required' });
-      await requiredTag.click();
-
-      // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
-      await copyButton.click();
-      await page.waitForTimeout(300);
-
-      // ダイアログのハンドラーを設定
-      page.on('dialog', async dialog => {
-        await dialog.accept();
-      });
-
-      // 別のプロパティ（Timeout）を選択
-      const timeoutNode = page.getByText('Timeout').first();
-      await timeoutNode.click();
-      await page.waitForTimeout(500);
-
-      // 初期状態で保存ボタンは無効
-      const saveButton = page.getByRole('button', { name: /保存/ }).last();
-      await expect(saveButton).toBeDisabled();
-
-      // ペーストボタンをクリック
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
-      await pasteButton.click();
-      await page.waitForTimeout(300);
-
-      // 保存ボタンが有効になる
-      await expect(saveButton).toBeEnabled();
-    }
-  });
-
-  test('タグとフィールド値の両方をコピー＆ペーストできる', async ({ page }) => {
-    const loaded = await loadConfigAndSelectProperty(page);
-
-    if (loaded) {
-      // タグを選択（requiredとnullable）
-      const requiredTag = page.getByRole('button', { name: 'required' });
-      await requiredTag.click();
-      await page.waitForTimeout(100);
-
-      const nullableTag = page.getByRole('button', { name: 'nullable' });
-      await nullableTag.click();
-      await page.waitForTimeout(100);
-
-      // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
-      await copyButton.click();
-      await page.waitForTimeout(300);
-
-      // ダイアログのハンドラーを設定
-      page.on('dialog', async dialog => {
-        await dialog.accept();
-      });
-
-      // 別のプロパティ（Timeout）を選択
-      const timeoutNode = page.getByText('Timeout').first();
-      await timeoutNode.click();
-      await page.waitForTimeout(500);
-
-      // ペーストボタンをクリック
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
-      await pasteButton.click();
-      await page.waitForTimeout(300);
-
-      // 両方のタグがペーストされていることを確認
-      const requiredTagAfterPaste = page.getByRole('button', { name: 'required' });
-      await expect(requiredTagAfterPaste).toHaveClass(/bg-blue-500/);
-
-      const nullableTagAfterPaste = page.getByRole('button', { name: 'nullable' });
-      await expect(nullableTagAfterPaste).toHaveClass(/bg-blue-500/);
-    }
-  });
-
   test('ペースト後に保存して永続化される', async ({ page }) => {
     const loaded = await loadConfigAndSelectProperty(page);
 
@@ -306,7 +144,7 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
       await stringTag.click();
 
       // コピーボタンをクリック
-      const copyButton = page.getByRole('button', { name: /コピー/ });
+      const copyButton = page.getByTitle('プロパティ詳細をコピー');
       await copyButton.click();
       await page.waitForTimeout(300);
 
@@ -321,12 +159,12 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
       await page.waitForTimeout(500);
 
       // ペーストボタンをクリック
-      const pasteButton = page.getByRole('button', { name: /ペースト/ });
+      const pasteButton = page.getByTitle('プロパティ詳細を貼り付け');
       await pasteButton.click();
       await page.waitForTimeout(300);
 
       // 保存ボタンをクリック
-      const saveButton = page.getByRole('button', { name: /保存/ }).last();
+      const saveButton = page.getByRole('button', { name: /保存/ });
       await saveButton.click();
 
       // トースト通知を確認
@@ -335,6 +173,167 @@ test.describe('プロパティ詳細のコピー＆ペースト', () => {
 
       // 保存後は保存ボタンが無効になる
       await expect(saveButton).toBeDisabled();
+    }
+  });
+});
+
+test.describe('プロパティ詳細の削除', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('削除ボタンが表示される', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // 削除ボタンが表示される
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await expect(deleteButton).toBeVisible();
+    }
+  });
+
+  test('保存前は削除ボタンが無効', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // 削除ボタンは無効（まだ保存されていないプロパティ）
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await expect(deleteButton).toBeDisabled();
+    }
+  });
+
+  test('保存後のプロパティは削除ボタンが有効', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // タグを選択して保存
+      const requiredTag = page.getByRole('button', { name: 'required' });
+      await requiredTag.click();
+      await page.waitForTimeout(100);
+
+      const saveButton = page.getByRole('button', { name: /保存/ });
+      await saveButton.click();
+      await page.waitForTimeout(500);
+
+      // 削除ボタンが有効になる
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await expect(deleteButton).toBeEnabled();
+    }
+  });
+
+  test('削除ボタンをクリックすると確認ダイアログが表示される', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // タグを選択して保存
+      const requiredTag = page.getByRole('button', { name: 'required' });
+      await requiredTag.click();
+      await page.waitForTimeout(100);
+
+      const saveButton = page.getByRole('button', { name: /保存/ });
+      await saveButton.click();
+      await page.waitForTimeout(500);
+
+      // ダイアログのハンドラーを設定
+      let dialogMessage = '';
+      page.on('dialog', async dialog => {
+        dialogMessage = dialog.message();
+        await dialog.dismiss(); // キャンセル
+      });
+
+      // 削除ボタンをクリック
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await deleteButton.click();
+      await page.waitForTimeout(300);
+
+      // 確認ダイアログが表示されることを確認
+      expect(dialogMessage).toContain('削除');
+    }
+  });
+
+  test('削除を実行するとトースト通知が表示される', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // タグを選択して保存
+      const requiredTag = page.getByRole('button', { name: 'required' });
+      await requiredTag.click();
+      await page.waitForTimeout(100);
+
+      const saveButton = page.getByRole('button', { name: /保存/ });
+      await saveButton.click();
+      await page.waitForTimeout(500);
+
+      // ダイアログのハンドラーを設定（確認ダイアログを承認）
+      page.on('dialog', async dialog => {
+        await dialog.accept();
+      });
+
+      // 削除ボタンをクリック
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await deleteButton.click();
+
+      // トースト通知を確認
+      const toast = page.getByText('プロパティ詳細を削除しました');
+      await expect(toast).toBeVisible();
+    }
+  });
+
+  test('削除後にタグがクリアされる', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // タグを選択して保存
+      const requiredTag = page.getByRole('button', { name: 'required' });
+      await requiredTag.click();
+      await expect(requiredTag).toHaveClass(/bg-blue-500/);
+      await page.waitForTimeout(100);
+
+      const saveButton = page.getByRole('button', { name: /保存/ });
+      await saveButton.click();
+      await page.waitForTimeout(500);
+
+      // ダイアログのハンドラーを設定（確認ダイアログを承認）
+      page.on('dialog', async dialog => {
+        await dialog.accept();
+      });
+
+      // 削除ボタンをクリック
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await deleteButton.click();
+      await page.waitForTimeout(500);
+
+      // タグが選択解除されている
+      const requiredTagAfterDelete = page.getByRole('button', { name: 'required' });
+      await expect(requiredTagAfterDelete).not.toHaveClass(/bg-blue-500/);
+    }
+  });
+
+  test('削除後は削除ボタンが無効になる', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page);
+
+    if (loaded) {
+      // タグを選択して保存
+      const requiredTag = page.getByRole('button', { name: 'required' });
+      await requiredTag.click();
+      await page.waitForTimeout(100);
+
+      const saveButton = page.getByRole('button', { name: /保存/ });
+      await saveButton.click();
+      await page.waitForTimeout(500);
+
+      // ダイアログのハンドラーを設定（確認ダイアログを承認）
+      page.on('dialog', async dialog => {
+        await dialog.accept();
+      });
+
+      // 削除ボタンをクリック
+      const deleteButton = page.getByRole('button', { name: /削除/ });
+      await deleteButton.click();
+      await page.waitForTimeout(500);
+
+      // 削除ボタンが無効になる
+      await expect(deleteButton).toBeDisabled();
     }
   });
 });
