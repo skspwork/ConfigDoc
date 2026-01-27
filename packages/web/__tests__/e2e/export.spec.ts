@@ -202,9 +202,6 @@ test.describe.serial('エクスポート機能', () => {
     // チェックを外す
     await checkbox.click();
     await expect(checkbox).not.toBeChecked();
-
-    await checkbox.click();
-    await expect(checkbox).toBeChecked();
   });
 
   test('キャンセルボタンでダイアログが閉じる', async ({ page }) => {

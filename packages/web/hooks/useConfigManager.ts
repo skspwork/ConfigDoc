@@ -523,8 +523,8 @@ export function useConfigManager(): UseConfigManagerReturn {
             };
             updatedProperties[templatePath] = templateDoc;
 
-            // 直接パスのドキュメントも更新（isTemplate: falseとして保存される場合があるため）
-            updatedProperties[selectedPath] = { ...propertyDoc, isTemplate: false };
+            // 直接パスのドキュメントは削除（古いデータが残らないように）
+            delete updatedProperties[selectedPath];
           } else {
             // テンプレートのチェックを外した場合、関連するテンプレートドキュメントを削除
             for (const [docPath, doc] of Object.entries(updatedProperties)) {

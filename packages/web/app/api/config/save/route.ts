@@ -56,6 +56,12 @@ export async function POST(request: NextRequest) {
         docToSave.path = savePath;
         // テンプレート作成元の具体的パスを記録（追跡用）
         docToSave.sourceTemplatePath = propertyPath;
+
+        // 直接パスのドキュメントが存在する場合は削除（古いデータが残らないように）
+        const docs = await storageService.loadAllDocs(configFilePath);
+        if (docs.properties[propertyPath]) {
+          await storageService.deletePropertyDoc(configFilePath, propertyPath);
+        }
       } else {
         // テンプレートではない場合、既存のテンプレートドキュメントを削除
         // このパスがsourceTemplatePathとして記録されているテンプレートを探して削除

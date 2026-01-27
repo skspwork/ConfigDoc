@@ -352,6 +352,76 @@ test.describe.serial('テンプレート水平展開機能', () => {
     // SystemUsers[1]:Idなど他の要素にInheritedが付く
     expect(inheritedCount).toBeGreaterThan(0);
   });
+
+  test('配列配下のテンプレート: リロード後もテンプレートとInheritedの両方に値が反映される', async ({ page }) => {
+    const loaded = await loadSampleConfig(page);
+    if (!loaded) {
+      test.skip();
+      return;
+    }
+
+    const testValue = `リロードテスト ${Date.now()}`;
+
+    // SystemUsers[0]:Idを選択
+    const idNode = page.locator('text=Id').first();
+    await idNode.click();
+    await page.waitForTimeout(300);
+
+    // テンプレートとして保存
+    await setTemplateCheckbox(page, true);
+    await fillField(page, '説明を入力してください', testValue);
+    await saveProperty(page);
+    await page.waitForTimeout(500);
+
+    // ページをリロード
+    await page.reload();
+    await page.waitForTimeout(1000);
+
+    // すべて展開
+    const expandAllButton = page.getByRole('button', { name: 'すべて展開' });
+    await expandAllButton.click();
+    await page.waitForTimeout(500);
+
+    // テンプレート元（SystemUsers[0]:Id）を選択
+    const idNodeAfterReload = page.locator('text=Id').first();
+    await idNodeAfterReload.click();
+    await page.waitForTimeout(300);
+
+    // テンプレートの値が保持されているか確認
+    const templateTextarea = page.getByPlaceholder('説明を入力してください');
+    const templateValue = await templateTextarea.inputValue();
+    expect(templateValue).toBe(testValue);
+
+    // テンプレートチェックボックスがONのままか確認
+    const templateCheckbox = page.locator('#isTemplate');
+    await expect(templateCheckbox).toBeChecked();
+
+    // Templateバッジが表示されているか確認
+    const templateBadge = page.locator('text=Template').first();
+    await expect(templateBadge).toBeVisible();
+
+    // 継承先（SystemUsers[1]:Id）を選択
+    const user1Toggle = page.locator('text=[1]').first();
+    await user1Toggle.click();
+    await page.waitForTimeout(300);
+
+    const idNodes = page.locator('text=Id');
+    const idCount = await idNodes.count();
+    if (idCount >= 2) {
+      await idNodes.nth(1).click();
+      await page.waitForTimeout(300);
+
+      // 継承先にもテンプレートの値が表示されているか確認
+      const inheritedTextarea = page.getByPlaceholder('説明を入力してください');
+      const inheritedValue = await inheritedTextarea.inputValue();
+      expect(inheritedValue).toBe(testValue);
+
+      // Inheritedバッジが表示されているか確認
+      const inheritedBadges = page.locator('text=Inherited');
+      const inheritedCount = await inheritedBadges.count();
+      expect(inheritedCount).toBeGreaterThan(0);
+    }
+  });
 });
 
 test.describe.serial('ワイルドカード連想配列機能', () => {
@@ -620,6 +690,132 @@ test.describe.serial('ワイルドカード連想配列機能', () => {
       const badgeInFieldsRow = fieldsRow.locator('text=連想配列');
       const badgeCount = await badgeInFieldsRow.count();
       expect(badgeCount).toBe(0);
+    }
+  });
+
+  test('連想配列配下のテンプレート: リロード後もテンプレートとInheritedの両方に値が反映される', async ({ page }) => {
+    const loaded = await loadSampleConfig(page);
+    if (!loaded) {
+      test.skip();
+      return;
+    }
+
+    const testValue = `連想配列テンプレートテスト ${Date.now()}`;
+
+    // まずFieldsを連想配列として登録
+    const fieldsNode = page.getByText('Fields', { exact: true }).first();
+    await fieldsNode.click();
+    await page.waitForTimeout(300);
+
+    const assocCheckbox = page.locator('#isAssociativeArray');
+    if ((await assocCheckbox.count()) === 0) {
+      test.skip();
+      return;
+    }
+
+    // Fieldsを連想配列として登録
+    if (!(await assocCheckbox.isChecked())) {
+      await assocCheckbox.check();
+      await page.waitForTimeout(500);
+    }
+
+    // Field1を展開
+    const field1Node = page.getByText('Field1', { exact: true }).first();
+    await field1Node.click();
+    await page.waitForTimeout(300);
+
+    // Contentsを展開
+    const contentsNode = page.getByText('Contents', { exact: true }).first();
+    await contentsNode.click();
+    await page.waitForTimeout(300);
+
+    // Content1を選択してテンプレートとして保存
+    const content1Node = page.getByText('Content1', { exact: true }).first();
+    await content1Node.click();
+    await page.waitForTimeout(300);
+
+    // テンプレートとして保存
+    await setTemplateCheckbox(page, true);
+    await fillField(page, '説明を入力してください', testValue);
+    await saveProperty(page);
+    await page.waitForTimeout(500);
+
+    // Templateバッジが表示される
+    const templateBadge = page.locator('text=Template').first();
+    await expect(templateBadge).toBeVisible();
+
+    // ページをリロード
+    await page.reload();
+    await page.waitForTimeout(1000);
+
+    // すべて展開
+    const expandAllButton = page.getByRole('button', { name: 'すべて展開' });
+    await expandAllButton.click();
+    await page.waitForTimeout(500);
+
+    // Fieldsが連想配列として登録されたままか確認
+    const fieldsNodeAfterReload = page.getByText('Fields', { exact: true }).first();
+    await fieldsNodeAfterReload.click();
+    await page.waitForTimeout(300);
+
+    const assocCheckboxAfterReload = page.locator('#isAssociativeArray');
+    await expect(assocCheckboxAfterReload).toBeChecked();
+
+    // テンプレート元（Field1:Contents:Content1）を選択
+    const field1NodeAfterReload = page.getByText('Field1', { exact: true }).first();
+    await field1NodeAfterReload.click();
+    await page.waitForTimeout(300);
+
+    const contentsNodeAfterReload = page.getByText('Contents', { exact: true }).first();
+    await contentsNodeAfterReload.click();
+    await page.waitForTimeout(300);
+
+    const content1NodeAfterReload = page.getByText('Content1', { exact: true }).first();
+    await content1NodeAfterReload.click();
+    await page.waitForTimeout(300);
+
+    // テンプレートの値が保持されているか確認
+    const templateTextarea = page.getByPlaceholder('説明を入力してください');
+    const templateValueAfterReload = await templateTextarea.inputValue();
+    expect(templateValueAfterReload).toBe(testValue);
+
+    // テンプレートチェックボックスがONのままか確認
+    const templateCheckbox = page.locator('#isTemplate');
+    await expect(templateCheckbox).toBeChecked();
+
+    // Templateバッジが表示されているか確認
+    const templateBadgeAfterReload = page.locator('text=Template').first();
+    await expect(templateBadgeAfterReload).toBeVisible();
+
+    // 継承先（Field2:Contents:Content1）を選択
+    const field2Node = page.getByText('Field2', { exact: true }).first();
+    await field2Node.click();
+    await page.waitForTimeout(300);
+
+    // Field2のContentsを展開
+    const field2Contents = page.locator('.group.flex.items-center').filter({ hasText: 'Contents' });
+    const field2ContentsCount = await field2Contents.count();
+    if (field2ContentsCount >= 2) {
+      await field2Contents.nth(1).click();
+      await page.waitForTimeout(300);
+    }
+
+    // Field2のContent1を選択
+    const content1Nodes = page.getByText('Content1', { exact: true });
+    const content1Count = await content1Nodes.count();
+    if (content1Count >= 2) {
+      await content1Nodes.nth(1).click();
+      await page.waitForTimeout(300);
+
+      // 継承先にもテンプレートの値が表示されているか確認
+      const inheritedTextarea = page.getByPlaceholder('説明を入力してください');
+      const inheritedValue = await inheritedTextarea.inputValue();
+      expect(inheritedValue).toBe(testValue);
+
+      // Inheritedバッジが表示されているか確認
+      const inheritedBadges = page.locator('text=Inherited');
+      const inheritedCount = await inheritedBadges.count();
+      expect(inheritedCount).toBeGreaterThan(0);
     }
   });
 });
