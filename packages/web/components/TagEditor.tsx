@@ -24,18 +24,18 @@ export function TagEditor({
     }
   };
 
-  // 名前変更時に選択中のタグも更新
-  const handleRename = (renamedMap: Record<string, string>) => {
-    const updatedSelectedTags = selectedTags.map(tag => renamedMap[tag] || tag);
+  // 削除されたタグを選択から除外（リネームも考慮）
+  const handleTagsChange = (newTags: string[], renamedMap?: Record<string, string>) => {
+    // まずリネームを適用
+    let updatedSelectedTags = selectedTags.map(tag => {
+      if (renamedMap && renamedMap[tag]) {
+        return renamedMap[tag];
+      }
+      return tag;
+    });
+    // 次に削除されたタグを除外
+    updatedSelectedTags = updatedSelectedTags.filter(tag => newTags.includes(tag));
     if (JSON.stringify(updatedSelectedTags) !== JSON.stringify(selectedTags)) {
-      onSelectedTagsChange(updatedSelectedTags);
-    }
-  };
-
-  // 削除されたタグを選択から除外
-  const handleTagsChange = (newTags: string[]) => {
-    const updatedSelectedTags = selectedTags.filter(tag => newTags.includes(tag));
-    if (updatedSelectedTags.length !== selectedTags.length) {
       onSelectedTagsChange(updatedSelectedTags);
     }
     onAvailableTagsChange(newTags);
@@ -53,7 +53,6 @@ export function TagEditor({
       deleteButtonTitle="タグを削除"
       addButtonTitle="タグを追加"
       duplicateErrorMessage="同じ名前のタグがあります"
-      onRename={handleRename}
     >
       {/* 通常モード（タグの選択） */}
       <div className="flex flex-wrap gap-2">

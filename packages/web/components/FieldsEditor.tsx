@@ -18,22 +18,22 @@ export function FieldsEditor({
   // フィールド名の一覧
   const fieldNames = Object.keys(projectFields);
 
-  // 名前変更時にフィールドの値も更新
-  const handleRename = (renamedMap: Record<string, string>) => {
-    const newFields: Record<string, string> = {};
-    for (const [oldName, value] of Object.entries(fields)) {
-      const newName = renamedMap[oldName] || oldName;
-      newFields[newName] = value;
-    }
-    onFieldsChange(newFields);
-  };
-
   // フィールド一覧が変更されたとき
-  const handleFieldNamesChange = (newNames: string[]) => {
+  const handleFieldNamesChange = (newNames: string[], renamedMap?: Record<string, string>) => {
+    // リネームマップの逆引きを作成（新名 → 旧名）
+    const reverseRenameMap: Record<string, string> = {};
+    if (renamedMap) {
+      for (const [oldName, newName] of Object.entries(renamedMap)) {
+        reverseRenameMap[newName] = oldName;
+      }
+    }
+
     // 新しいフィールド構造を構築
     const newFields: Record<string, string> = {};
     for (const name of newNames) {
-      newFields[name] = fields[name] || '';
+      // リネームされた場合は旧名で値を取得、そうでなければ現在の名前で取得
+      const oldName = reverseRenameMap[name] || name;
+      newFields[name] = fields[oldName] || '';
     }
 
     // フィールドを更新（ローカル状態）
@@ -69,7 +69,6 @@ export function FieldsEditor({
       deleteButtonTitle="フィールドを削除"
       addButtonTitle="フィールドを追加"
       duplicateErrorMessage="同じ名前のフィールドがあります"
-      onRename={handleRename}
     >
       {/* 通常モード（フィールド値の入力） */}
       <div className="space-y-3">

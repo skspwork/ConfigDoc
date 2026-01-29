@@ -675,26 +675,10 @@ export function useConfigManager(): UseConfigManagerReturn {
         }
       }
 
-      // 編集中のドキュメントも更新
-      if (editingDoc && editingDoc.tags && editingDoc.tags.length > 0) {
-        const filteredEditingTags = editingDoc.tags.filter(tag => !removedTags.includes(tag));
-        const updatedEditingTags = sortTagsByOrder(filteredEditingTags, newTagOrder);
-
-        const tagsChanged = detectTagChanges(editingDoc.tags, updatedEditingTags);
-
-        if (tagsChanged) {
-          const updated = { ...editingDoc, tags: updatedEditingTags };
-          setEditingDoc(updated);
-
-          if (originalDoc && originalDoc.tags) {
-            const filteredOriginalTags = originalDoc.tags.filter(tag => !removedTags.includes(tag));
-            const updatedOriginalTags = sortTagsByOrder(filteredOriginalTags, newTagOrder);
-            setOriginalDoc({ ...originalDoc, tags: updatedOriginalTags });
-          }
-        }
-      }
+      // 編集中のドキュメントはTagEditorのonSelectedTagsChangeで更新されるためここでは更新しない
+      // （名前変更の場合、TagEditor側で正しいマッピングが行われる）
     }
-  }, [availableTags, editingDoc, loadedConfigs, originalDoc]);
+  }, [availableTags, loadedConfigs]);
 
   // プロジェクトフィールドを更新
   const handleProjectFieldsChange = useCallback(async (fields: Record<string, string>) => {
@@ -750,28 +734,9 @@ export function useConfigManager(): UseConfigManagerReturn {
       }
     }
 
-    if (originalDoc) {
-      const updatedOriginalFields: Record<string, string> = {};
-      for (const key of newFieldKeys) {
-        updatedOriginalFields[key] = originalDoc.fields?.[key] || '';
-      }
-      setOriginalDoc({ ...originalDoc, fields: updatedOriginalFields });
-    }
-
-    if (editingDoc) {
-      const updatedEditingFields: Record<string, string> = {};
-      for (const key of newFieldKeys) {
-        updatedEditingFields[key] = editingDoc.fields?.[key] || '';
-      }
-      const updated = { ...editingDoc, fields: updatedEditingFields };
-      setEditingDoc(updated);
-
-      const updatedOriginal = originalDoc
-        ? { ...originalDoc, fields: Object.fromEntries(newFieldKeys.map(key => [key, originalDoc.fields?.[key] || ''])) }
-        : null;
-      setHasUnsavedChanges(checkForChanges(updated, updatedOriginal));
-    }
-  }, [checkForChanges, editingDoc, loadedConfigs, originalDoc, projectFields]);
+    // 編集中のドキュメントはFieldsEditorのonFieldsChangeで更新されるためここでは更新しない
+    // （名前変更の場合、FieldsEditor側で正しいマッピングが行われる）
+  }, [loadedConfigs, projectFields]);
 
   // 選択状態をリセット
   const resetSelection = useCallback(() => {

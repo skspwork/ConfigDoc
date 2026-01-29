@@ -14,8 +14,8 @@ interface EditableListWrapperProps {
   label: string;
   /** 現在のアイテム一覧 */
   items: string[];
-  /** アイテム一覧が変更されたときのコールバック */
-  onItemsChange: (items: string[]) => void;
+  /** アイテム一覧が変更されたときのコールバック（renamedMapは名前変更があった場合のみ渡される） */
+  onItemsChange: (items: string[], renamedMap?: Record<string, string>) => void;
   /** 編集ボタンのtitle属性 */
   editButtonTitle: string;
   /** 編集モードの説明テキスト */
@@ -184,12 +184,13 @@ export function EditableListWrapper({
       newItems.push(pendingName);
     }
 
-    // 名前変更コールバック
+    // 名前変更コールバック（後方互換性のため維持）
     if (onRename && Object.keys(renamedMap).length > 0) {
       onRename(renamedMap);
     }
 
-    onItemsChange(newItems);
+    // renamedMapを渡して、受け取り側で正しくマッピングできるようにする
+    onItemsChange(newItems, Object.keys(renamedMap).length > 0 ? renamedMap : undefined);
     setIsEditMode(false);
     setEditingItems([]);
     setNewItemName('');
