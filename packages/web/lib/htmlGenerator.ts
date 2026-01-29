@@ -66,7 +66,7 @@ export class HtmlGenerator {
       configFiles: []
     };
 
-    return this.generateFullHtml(metadata, configs, fieldKeys, availableTags, settings.associativeArrays || []);
+    return this.generateFullHtml(metadata, configs, fieldKeys, availableTags);
   }
 
   private generateEmptyHtml(): string {
@@ -92,11 +92,10 @@ export class HtmlGenerator {
 </html>`;
   }
 
-  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[], fieldKeys: string[], availableTags: string[], associativeArrays: AssociativeArrayMapping[]): string {
+  private generateFullHtml(metadata: ProjectConfigFiles, configs: ConfigWithDocs[], fieldKeys: string[], availableTags: string[]): string {
     const configsJson = JSON.stringify(configs, null, 2);
     const fieldKeysJson = JSON.stringify(fieldKeys);
     const availableTagsJson = JSON.stringify(availableTags);
-    const associativeArraysJson = JSON.stringify(associativeArrays);
 
     return `<!DOCTYPE html>
 <html lang="ja">
@@ -135,8 +134,12 @@ export class HtmlGenerator {
     const configs = ${configsJson};
     const fieldKeys = ${fieldKeysJson};
     const availableTags = ${availableTagsJson};
-    const associativeArrays = ${associativeArraysJson};
     let activeConfigIndex = 0;
+
+    // 連想配列をアクティブな設定ファイルのdocsから取得するヘルパー関数
+    function getAssociativeArrays() {
+      return configs[activeConfigIndex].docs.associativeArrays || [];
+    }
     let selectedPath = '';
     let currentSearchQuery = '';
 
@@ -368,7 +371,7 @@ export class HtmlGenerator {
       }
 
       // 2. テンプレートパスでフォールバック検索（連想配列も考慮）
-      const templatePath = getTemplatePathForConcrete(propertyPath, associativeArrays, configData);
+      const templatePath = getTemplatePathForConcrete(propertyPath, getAssociativeArrays(), configData);
       if (templatePath !== propertyPath && docsProperties[templatePath]) {
         const doc = docsProperties[templatePath];
         if (doc.isTemplate) {
@@ -388,7 +391,7 @@ export class HtmlGenerator {
 
     // テンプレートドキュメントのみを検索（連想配列も考慮）
     function findTemplateForPath(propertyPath, docsProperties, configData) {
-      const templatePath = getTemplatePathForConcrete(propertyPath, associativeArrays, configData);
+      const templatePath = getTemplatePathForConcrete(propertyPath, getAssociativeArrays(), configData);
       if (templatePath !== propertyPath && docsProperties[templatePath]) {
         const doc = docsProperties[templatePath];
         if (doc.isTemplate) {

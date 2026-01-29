@@ -24,11 +24,12 @@ export class MarkdownGenerator {
     const settings = await fsService.loadProjectSettings();
     const fieldKeys = settings?.fields ? Object.keys(settings.fields) : [];
     const availableTags = settings?.availableTags || [];
-    const associativeArrays = settings?.associativeArrays || [];
 
     const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
     const docs = await storageService.loadAllDocs(filePath);
     const configData = await fsService.loadConfigFile(filePath);
+    // 連想配列はファイルごとのdocsから読み込む
+    const associativeArrays = docs.associativeArrays || [];
 
     let markdown = `# ${fileName}\n\n`;
     markdown += `**ファイルパス:** \`${filePath}\`\n\n`;
@@ -144,8 +145,8 @@ export class MarkdownGenerator {
 
       markdown += '### プロパティ一覧\n\n';
 
-      // 連想配列マッピングを取得
-      const associativeArrays = settings.associativeArrays || [];
+      // 連想配列マッピングを取得（ファイルごとのdocsから読み込む）
+      const associativeArrays = docs.associativeArrays || [];
 
       for (const propertyPath of allPropertyPaths) {
         // テンプレートドキュメントも考慮してドキュメントを検索・マージ

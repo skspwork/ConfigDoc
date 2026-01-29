@@ -24,10 +24,11 @@ export class MarkdownTableGenerator {
     const settings = await fsService.loadProjectSettings();
     const fieldKeys = settings?.fields ? Object.keys(settings.fields) : [];
     const availableTags = settings?.availableTags || [];
-    const associativeArrays: AssociativeArrayMapping[] = settings?.associativeArrays || [];
 
     const fileName = filePath.split(/[/\\]/).pop() || 'config.json';
     const docs = await storageService.loadAllDocs(filePath);
+    // 連想配列はファイルごとのdocsから読み込む
+    const associativeArrays: AssociativeArrayMapping[] = docs.associativeArrays || [];
     const configData = await fsService.loadConfigFile(filePath);
 
     let markdown = `# ${fileName}\n\n`;
@@ -146,8 +147,8 @@ export class MarkdownTableGenerator {
       });
       markdown += '\n';
 
-      // 連想配列マッピングを取得
-      const associativeArrays: AssociativeArrayMapping[] = settings.associativeArrays || [];
+      // 連想配列マッピングを取得（ファイルごとのdocsから読み込む）
+      const associativeArrays: AssociativeArrayMapping[] = docs.associativeArrays || [];
 
       // 各プロパティの行を追加
       for (const propertyPath of allPropertyPaths) {

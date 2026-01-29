@@ -1,6 +1,6 @@
 {
   "name": "@skspwork/config-doc",
-  "version": "2.2.0-beta.1",
+  "version": "2.2.0",
   "description": "Interactive documentation tool for JSON configuration files (appsettings.json)",
   "keywords": [
     "config",
