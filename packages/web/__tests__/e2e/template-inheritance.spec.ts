@@ -172,7 +172,7 @@ test.describe.serial('テンプレート水平展開機能', () => {
     expect(inheritedCount).toBeGreaterThan(0);
   });
 
-  test('継承元プロパティを選択するとテンプレートの値がマージされて表示される', async ({ page }) => {
+  test('継承元プロパティを選択するとテンプレートの値がプレースホルダーとして表示される', async ({ page }) => {
     const loaded = await loadSampleConfig(page);
     if (!loaded) {
       test.skip();
@@ -203,10 +203,19 @@ test.describe.serial('テンプレート水平展開機能', () => {
       await idNodes.nth(1).click();
       await page.waitForTimeout(300);
 
-      // テンプレートの値が表示されているか確認
-      const textarea = page.getByPlaceholder('説明を入力してください');
-      const currentValue = await textarea.inputValue();
-      expect(currentValue).toBe(testValue);
+      // テンプレートの値がプレースホルダーとして表示されているか確認
+      // （直接設定値がないため、継承値はプレースホルダーとして表示される）
+      const inheritedTextareas = page.locator('textarea');
+      const inheritedTextareaCount = await inheritedTextareas.count();
+      let foundPlaceholder = false;
+      for (let i = 0; i < inheritedTextareaCount; i++) {
+        const placeholder = await inheritedTextareas.nth(i).getAttribute('placeholder');
+        if (placeholder === testValue) {
+          foundPlaceholder = true;
+          break;
+        }
+      }
+      expect(foundPlaceholder).toBe(true);
     }
   });
 
@@ -411,10 +420,19 @@ test.describe.serial('テンプレート水平展開機能', () => {
       await idNodes.nth(1).click();
       await page.waitForTimeout(300);
 
-      // 継承先にもテンプレートの値が表示されているか確認
-      const inheritedTextarea = page.getByPlaceholder('説明を入力してください');
-      const inheritedValue = await inheritedTextarea.inputValue();
-      expect(inheritedValue).toBe(testValue);
+      // 継承先にはテンプレートの値がプレースホルダーとして表示されているか確認
+      // （直接設定値がないため、継承値はプレースホルダーとして表示される）
+      const inheritedTextareas = page.locator('textarea');
+      const inheritedTextareaCount = await inheritedTextareas.count();
+      let foundPlaceholder = false;
+      for (let i = 0; i < inheritedTextareaCount; i++) {
+        const placeholder = await inheritedTextareas.nth(i).getAttribute('placeholder');
+        if (placeholder === testValue) {
+          foundPlaceholder = true;
+          break;
+        }
+      }
+      expect(foundPlaceholder).toBe(true);
 
       // Inheritedバッジが表示されているか確認
       const inheritedBadges = page.locator('text=Inherited');
@@ -807,10 +825,19 @@ test.describe.serial('ワイルドカード連想配列機能', () => {
       await content1Nodes.nth(1).click();
       await page.waitForTimeout(300);
 
-      // 継承先にもテンプレートの値が表示されているか確認
-      const inheritedTextarea = page.getByPlaceholder('説明を入力してください');
-      const inheritedValue = await inheritedTextarea.inputValue();
-      expect(inheritedValue).toBe(testValue);
+      // 継承先にはテンプレートの値がプレースホルダーとして表示されているか確認
+      // （直接設定値がないため、継承値はプレースホルダーとして表示される）
+      const inheritedTextareas = page.locator('textarea');
+      const inheritedTextareaCount = await inheritedTextareas.count();
+      let foundPlaceholder = false;
+      for (let i = 0; i < inheritedTextareaCount; i++) {
+        const placeholder = await inheritedTextareas.nth(i).getAttribute('placeholder');
+        if (placeholder === testValue) {
+          foundPlaceholder = true;
+          break;
+        }
+      }
+      expect(foundPlaceholder).toBe(true);
 
       // Inheritedバッジが表示されているか確認
       const inheritedBadges = page.locator('text=Inherited');

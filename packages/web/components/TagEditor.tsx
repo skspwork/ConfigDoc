@@ -5,6 +5,7 @@ import { EditableListWrapper } from './EditableList';
 
 interface TagEditorProps {
   selectedTags: string[];
+  inheritedTags?: string[];
   availableTags: string[];
   onSelectedTagsChange: (tags: string[]) => void;
   onAvailableTagsChange: (tags: string[], renamedMap?: Record<string, string>) => void;
@@ -12,6 +13,7 @@ interface TagEditorProps {
 
 export function TagEditor({
   selectedTags,
+  inheritedTags,
   availableTags,
   onSelectedTagsChange,
   onAvailableTagsChange
@@ -63,16 +65,22 @@ export function TagEditor({
           </div>
         ) : (
           availableTags.map((tag) => {
-            const isSelected = selectedTags.includes(tag);
+            const isDirectlySelected = selectedTags.includes(tag);
+            const isInherited = !isDirectlySelected && (inheritedTags?.includes(tag) || false);
+            const isSelected = isDirectlySelected || isInherited;
+
             return (
               <button
                 key={tag}
                 onClick={() => handleToggleTag(tag)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all duration-200 ${
-                  isSelected
+                  isDirectlySelected
                     ? 'bg-blue-500 text-white border-blue-600 shadow-md'
+                    : isInherited
+                    ? 'bg-purple-100 text-purple-700 border-purple-300 shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                 }`}
+                title={isInherited ? 'テンプレートから継承（クリックで直接選択に変更）' : undefined}
               >
                 {isSelected && <CheckIcon className="w-3 h-3" />}
                 <span>{tag}</span>

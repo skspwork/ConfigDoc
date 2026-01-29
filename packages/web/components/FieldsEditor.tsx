@@ -4,6 +4,7 @@ import { EditableListWrapper } from './EditableList';
 
 interface FieldsEditorProps {
   fields: Record<string, string>;
+  inheritedFields?: Record<string, string>;
   projectFields: Record<string, string>;
   onFieldsChange: (fields: Record<string, string>) => void;
   onUpdateProjectFields?: (fields: Record<string, string>, renamedMap?: Record<string, string>) => void;
@@ -11,6 +12,7 @@ interface FieldsEditorProps {
 
 export function FieldsEditor({
   fields,
+  inheritedFields,
   projectFields,
   onFieldsChange,
   onUpdateProjectFields
@@ -72,19 +74,34 @@ export function FieldsEditor({
     >
       {/* 通常モード（フィールド値の入力） */}
       <div className="space-y-3">
-        {Object.entries(fields).map(([label, value]) => (
-          <div key={label}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label}
-            </label>
-            <textarea
-              value={value}
-              onChange={(e) => handleFieldValueChange(label, e.target.value)}
-              className="w-full border-2 border-gray-200 rounded-lg p-3 min-h-[80px] text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm hover:shadow-md"
-              placeholder={`${label}を入力してください`}
-            />
-          </div>
-        ))}
+        {Object.keys(projectFields).map((label) => {
+          const directValue = fields[label] || '';
+          const inheritedValue = inheritedFields?.[label] || '';
+          const hasInheritedValue = !directValue && !!inheritedValue;
+
+          return (
+            <div key={label}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+                {hasInheritedValue && (
+                  <span className="ml-2 text-xs text-purple-500 font-normal">
+                    (テンプレートから継承)
+                  </span>
+                )}
+              </label>
+              <textarea
+                value={directValue}
+                onChange={(e) => handleFieldValueChange(label, e.target.value)}
+                placeholder={inheritedValue || `${label}を入力してください`}
+                className={`w-full border-2 rounded-lg p-3 min-h-[80px] text-sm transition-all duration-200 shadow-sm hover:shadow-md ${
+                  hasInheritedValue
+                    ? 'border-purple-200 bg-purple-50/50 placeholder:text-purple-400'
+                    : 'border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'
+                }`}
+              />
+            </div>
+          );
+        })}
       </div>
     </EditableListWrapper>
   );

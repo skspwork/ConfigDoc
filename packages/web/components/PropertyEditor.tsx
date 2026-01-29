@@ -14,6 +14,8 @@ interface PropertyEditorProps {
   selectedNodeType?: 'object' | 'array' | 'string' | 'number' | 'boolean';
   isAssociativeArray?: boolean;
   isDescendantOfAssociativeArray?: boolean;
+  inheritedTags?: string[];
+  inheritedFields?: Record<string, string>;
   onEditingDocChange: (doc: PropertyDoc) => void;
   onAvailableTagsChange: (tags: string[], renamedMap?: Record<string, string>) => void;
   onProjectFieldsChange: (fields: Record<string, string>, renamedMap?: Record<string, string>) => void;
@@ -35,6 +37,8 @@ export function PropertyEditor({
   selectedNodeType,
   isAssociativeArray = false,
   isDescendantOfAssociativeArray = false,
+  inheritedTags,
+  inheritedFields,
   onEditingDocChange,
   onAvailableTagsChange,
   onProjectFieldsChange,
@@ -102,6 +106,7 @@ export function PropertyEditor({
             {/* タグ */}
             <TagEditor
               selectedTags={editingDoc.tags || []}
+              inheritedTags={inheritedTags}
               availableTags={availableTags}
               onSelectedTagsChange={(tags) => {
                 onEditingDocChange({ ...editingDoc, tags });
@@ -112,6 +117,7 @@ export function PropertyEditor({
             {/* フィールド */}
             <FieldsEditor
               fields={editingDoc.fields || {}}
+              inheritedFields={inheritedFields}
               projectFields={projectFields}
               onFieldsChange={(fields) => {
                 onEditingDocChange({ ...editingDoc, fields });

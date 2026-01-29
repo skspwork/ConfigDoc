@@ -30,6 +30,8 @@ export default function Home() {
     associativeArrays,
     toasts,
     rootPath,
+    inheritedTags,
+    inheritedFields,
 
     setActiveConfigIndex,
     setEditingDoc,
@@ -110,6 +112,8 @@ export default function Home() {
               selectedNodeType={selectedNodeType}
               isAssociativeArray={isAssociativeArray(selectedPath)}
               isDescendantOfAssociativeArray={isDescendantOfAssociativeArray(selectedPath)}
+              inheritedTags={inheritedTags}
+              inheritedFields={inheritedFields}
               onEditingDocChange={(doc) => {
                 setEditingDoc(doc);
                 setHasUnsavedChanges(checkForChanges(doc, originalDoc));

@@ -42,6 +42,8 @@ interface UseConfigManagerReturn {
   rootPath: string;
   isInitialized: boolean;
   clipboard: PropertyClipboard | null;
+  inheritedTags: string[];
+  inheritedFields: Record<string, string>;
 
   // アクション
   setActiveConfigIndex: (index: number) => void;
@@ -101,6 +103,10 @@ export function useConfigManager(): UseConfigManagerReturn {
 
   // クリップボード（コピー＆ペースト用）
   const [clipboard, setClipboard] = useState<PropertyClipboard | null>(null);
+
+  // テンプレートからの継承情報（プレースホルダー表示用）
+  const [inheritedTags, setInheritedTags] = useState<string[]>([]);
+  const [inheritedFields, setInheritedFields] = useState<Record<string, string>>({});
 
   const activeConfig = loadedConfigs[activeConfigIndex];
 
@@ -412,7 +418,7 @@ export function useConfigManager(): UseConfigManagerReturn {
     const isTemplateSource = !!templateFromSourcePath;
 
     // 継承用テンプレートを検索（直接ドキュメント以外のテンプレート）
-    const inheritedTemplate = activeConfig?.configData
+    const foundInheritedTemplate = activeConfig?.configData
       ? findTemplateForPath(
           path,
           activeConfig.docs.properties as Record<string, PropertyDoc>,
@@ -421,36 +427,26 @@ export function useConfigManager(): UseConfigManagerReturn {
         )
       : undefined;
 
+    // 継承情報を設定（テンプレート元パス以外で、継承テンプレートがある場合）
+    if (foundInheritedTemplate && !isTemplateSource) {
+      setInheritedTags(foundInheritedTemplate.tags || []);
+      setInheritedFields(foundInheritedTemplate.fields || {});
+    } else {
+      setInheritedTags([]);
+      setInheritedFields({});
+    }
+
     if (existingDoc) {
       // 直接ドキュメントがある場合
-      let mergedDoc = {
+      const directDoc = {
         ...existingDoc,
         tags: existingDoc.tags || [],
         // このパスがテンプレート元の場合はisTemplateをtrueに設定
         isTemplate: isTemplateSource ? true : existingDoc.isTemplate
       };
 
-      // Inherited: テンプレートからの継承がある場合、空のフィールドとタグをマージ
-      if (inheritedTemplate && !isTemplateSource) {
-        // タグが空の場合はテンプレートのタグを使用
-        if ((!mergedDoc.tags || mergedDoc.tags.length === 0) && inheritedTemplate.tags && inheritedTemplate.tags.length > 0) {
-          mergedDoc = { ...mergedDoc, tags: [...inheritedTemplate.tags] };
-        }
-
-        // 空のフィールドはテンプレートの値で補完
-        if (inheritedTemplate.fields) {
-          const mergedFields = { ...(mergedDoc.fields || {}) };
-          for (const [key, templateValue] of Object.entries(inheritedTemplate.fields)) {
-            const strValue = templateValue as string;
-            if ((!mergedFields[key] || mergedFields[key].trim() === '') && strValue && strValue.trim() !== '') {
-              mergedFields[key] = strValue;
-            }
-          }
-          mergedDoc = { ...mergedDoc, fields: mergedFields };
-        }
-      }
-
-      const docCopy = normalizePropertyDoc(mergedDoc);
+      // 継承値をマージせず、直接設定値のみを保持
+      const docCopy = normalizePropertyDoc(directDoc);
       setEditingDoc(docCopy);
       setOriginalDoc(docCopy);
     } else {
@@ -465,23 +461,15 @@ export function useConfigManager(): UseConfigManagerReturn {
         });
         setEditingDoc(docCopy);
         setOriginalDoc(docCopy);
-      } else if (inheritedTemplate) {
-        // 継承テンプレートがある場合、その内容を初期値として使用
-        const docCopy = normalizePropertyDoc({
-          path,
-          tags: inheritedTemplate.tags ? [...inheritedTemplate.tags] : [],
-          fields: inheritedTemplate.fields ? { ...inheritedTemplate.fields } : { ...projectFields },
-          modifiedAt: new Date().toISOString(),
-          isTemplate: false
-        });
-        setEditingDoc(docCopy);
-        setOriginalDoc(docCopy);
       } else {
+        // 継承テンプレートの有無に関わらず、空のドキュメントで初期化
+        // 継承値はinheritedTags/inheritedFieldsに保持されているため、UI側でプレースホルダーとして表示
         const newDoc: PropertyDoc = {
           path,
           tags: [],
-          fields: { ...projectFields },
-          modifiedAt: new Date().toISOString()
+          fields: Object.fromEntries(Object.keys(projectFields).map(k => [k, ''])),
+          modifiedAt: new Date().toISOString(),
+          isTemplate: false
         };
         setEditingDoc(newDoc);
         setOriginalDoc(newDoc);
@@ -979,6 +967,8 @@ export function useConfigManager(): UseConfigManagerReturn {
     toasts,
     rootPath,
     isInitialized,
+    inheritedTags,
+    inheritedFields,
 
     setActiveConfigIndex,
     setSelectedPath,
