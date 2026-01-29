@@ -57,8 +57,8 @@ interface UseConfigManagerReturn {
   handleSelectProperty: (path: string) => void;
   handleSaveProperty: () => Promise<void>;
   handleExport: (settings: ExportSettings) => Promise<void>;
-  handleAvailableTagsChange: (tags: string[]) => Promise<void>;
-  handleProjectFieldsChange: (fields: Record<string, string>) => Promise<void>;
+  handleAvailableTagsChange: (tags: string[], renamedMap?: Record<string, string>) => Promise<void>;
+  handleProjectFieldsChange: (fields: Record<string, string>, renamedMap?: Record<string, string>) => Promise<void>;
   handleToggleAssociativeArray: (path: string, isAssociative: boolean) => Promise<void>;
   checkForChanges: (current: PropertyDoc | null, original: PropertyDoc | null) => boolean;
   resetSelection: () => void;
@@ -617,7 +617,7 @@ export function useConfigManager(): UseConfigManagerReturn {
   }, [showToast]);
 
   // 利用可能なタグを更新
-  const handleAvailableTagsChange = useCallback(async (tags: string[]) => {
+  const handleAvailableTagsChange = useCallback(async (tags: string[], renamedMap?: Record<string, string>) => {
     const removedTags = availableTags.filter(tag => !tags.includes(tag));
     const oldTagOrder = availableTags;
     const newTagOrder = tags;
@@ -629,20 +629,29 @@ export function useConfigManager(): UseConfigManagerReturn {
       body: JSON.stringify({ availableTags: tags })
     });
 
-    // タグの削除または順序変更がある場合、すべてのドキュメントを更新
+    // タグの削除、順序変更、または名前変更がある場合、すべてのドキュメントを更新
     const hasRemovedTags = removedTags.length > 0;
     const hasOrderChanged = oldTagOrder.some((tag, idx) => tag !== newTagOrder[idx]) ||
                            oldTagOrder.length !== newTagOrder.length;
+    const hasRenamedTags = renamedMap && Object.keys(renamedMap).length > 0;
 
-    if (hasRemovedTags || hasOrderChanged) {
+    if (hasRemovedTags || hasOrderChanged || hasRenamedTags) {
       for (const config of loadedConfigs) {
         let hasChanges = false;
         const updatedProperties = { ...config.docs.properties };
 
         for (const [propPath, doc] of Object.entries(updatedProperties)) {
           if (doc.tags && doc.tags.length > 0) {
+            // まずリネームを適用
+            let mappedTags = doc.tags.map(tag => {
+              if (renamedMap && renamedMap[tag]) {
+                return renamedMap[tag];
+              }
+              return tag;
+            });
+
             // 削除されたタグを除外
-            const filteredTags = doc.tags.filter(tag => !removedTags.includes(tag));
+            const filteredTags = mappedTags.filter(tag => !removedTags.includes(tag));
 
             // availableTagsの順序でソート
             const updatedTags = sortTagsByOrder(filteredTags, newTagOrder);
@@ -681,10 +690,11 @@ export function useConfigManager(): UseConfigManagerReturn {
   }, [availableTags, loadedConfigs]);
 
   // プロジェクトフィールドを更新
-  const handleProjectFieldsChange = useCallback(async (fields: Record<string, string>) => {
+  const handleProjectFieldsChange = useCallback(async (fields: Record<string, string>, renamedMap?: Record<string, string>) => {
     const oldFieldKeys = Object.keys(projectFields);
     const newFieldKeys = Object.keys(fields);
     const removedFields = oldFieldKeys.filter(key => !newFieldKeys.includes(key));
+    const hasRenamedFields = renamedMap && Object.keys(renamedMap).length > 0;
 
     setProjectFields(fields);
     await fetch('/api/config/metadata', {
@@ -694,22 +704,22 @@ export function useConfigManager(): UseConfigManagerReturn {
     });
 
     // すべての設定ファイルのドキュメントを更新
-    // フィールドの削除または順序変更に対応
+    // フィールドの削除、順序変更、または名前変更に対応
     for (const config of loadedConfigs) {
       let hasChanges = false;
       const updatedProperties = { ...config.docs.properties };
 
       for (const [propPath, doc] of Object.entries(updatedProperties)) {
         if (doc.fields) {
-          // 新しいフィールド定義の順序で再構築
-          const reorderedDocFields = reorderFields(doc.fields, newFieldKeys);
+          // 新しいフィールド定義の順序で再構築（renamedMapを渡す）
+          const reorderedDocFields = reorderFields(doc.fields, newFieldKeys, renamedMap);
 
-          // 順序が変わったか、削除されたフィールドがあるかチェック
+          // 順序が変わったか、削除されたフィールドがあるか、名前変更があるかチェック
           const oldKeys = Object.keys(doc.fields);
           const orderChanged = oldKeys.some((key, idx) => key !== newFieldKeys[idx]);
           const hasRemovedFields = removedFields.some(field => field in doc.fields);
 
-          if (orderChanged || hasRemovedFields || oldKeys.length !== newFieldKeys.length) {
+          if (orderChanged || hasRemovedFields || hasRenamedFields || oldKeys.length !== newFieldKeys.length) {
             updatedProperties[propPath] = { ...doc, fields: reorderedDocFields };
             hasChanges = true;
           }

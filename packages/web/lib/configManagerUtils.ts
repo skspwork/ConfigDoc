@@ -34,15 +34,27 @@ export function sortTagsByOrder(
  * newFieldKeysの順序でフィールドを並び替え
  * 指定された順序で新しいオブジェクトを作成
  * 存在しないフィールドは空文字列で初期化される
+ * renamedMapがある場合、旧名のフィールド値を新名に引き継ぐ
  */
 export function reorderFields(
   fields: Record<string, string>,
-  newFieldKeys: string[]
+  newFieldKeys: string[],
+  renamedMap?: Record<string, string>
 ): Record<string, string> {
   const reordered: Record<string, string> = {};
 
+  // renamedMapの逆引きを作成（新名 → 旧名）
+  const reverseRenamedMap: Record<string, string> = {};
+  if (renamedMap) {
+    for (const [oldName, newName] of Object.entries(renamedMap)) {
+      reverseRenamedMap[newName] = oldName;
+    }
+  }
+
   for (const key of newFieldKeys) {
-    reordered[key] = fields[key] || '';
+    // リネームされた場合は旧名で値を取得
+    const oldKey = reverseRenamedMap[key] || key;
+    reordered[key] = fields[oldKey] || '';
   }
 
   return reordered;

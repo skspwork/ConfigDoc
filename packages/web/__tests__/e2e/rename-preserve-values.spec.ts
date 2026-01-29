@@ -382,3 +382,187 @@ test.describe('フィールド名変更時の値引き継ぎ', () => {
     }
   });
 });
+
+test.describe.serial('他のプロパティの値も維持される（横展開）', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('タグ名を変更しても他のプロパティのタグ選択が維持される', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page, 'ConnectionString');
+
+    if (loaded) {
+      const timestamp = Date.now();
+      const originalTagName = `SharedTag${timestamp}`;
+      const renamedTagName = `RenamedSharedTag${timestamp}`;
+
+      // タグ編集モードに入る
+      const editButton = page.getByTitle('タグを編集');
+      await editButton.click();
+      await page.waitForTimeout(300);
+
+      // 新規タグを追加
+      const input = page.getByPlaceholder('新しいタグ名を入力');
+      await input.fill(originalTagName);
+      const addButton = page.getByTitle('タグを追加');
+      await addButton.click();
+      await page.waitForTimeout(300);
+
+      // 編集モードの保存をクリック
+      const saveButtonInEditMode = page.locator('button.bg-green-500, button.bg-green-600').filter({ hasText: '保存' });
+      await saveButtonInEditMode.click();
+      await page.waitForTimeout(300);
+
+      // タグを選択
+      const newTag = page.getByRole('button', { name: originalTagName });
+      await newTag.click();
+      await expect(newTag).toHaveClass(/bg-blue-500/);
+
+      // プロパティを保存
+      const mainSaveButton = page.locator('button').filter({ hasText: '保存' }).filter({ has: page.locator('svg') }).last();
+      await mainSaveButton.click();
+      await page.waitForTimeout(500);
+
+      // 別のプロパティに切り替える
+      const otherProperty = page.getByText('MaxPoolSize').first();
+      await otherProperty.click();
+      await page.waitForTimeout(300);
+
+      // 同じタグを選択
+      const sameTagOnOther = page.getByRole('button', { name: originalTagName });
+      await sameTagOnOther.click();
+      await expect(sameTagOnOther).toHaveClass(/bg-blue-500/);
+
+      // このプロパティも保存
+      await mainSaveButton.click();
+      await page.waitForTimeout(500);
+
+      // 元のプロパティに戻る（タグ名変更のため）
+      const originalProperty = page.getByText('ConnectionString').first();
+      await originalProperty.click();
+      await page.waitForTimeout(300);
+
+      // タグ編集モードに入ってタグ名を変更
+      await editButton.click();
+      await page.waitForTimeout(300);
+
+      const tagInput = await findInputByValue(page, 'タグを削除', originalTagName);
+      expect(tagInput).not.toBeNull();
+      await tagInput!.clear();
+      await tagInput!.fill(renamedTagName);
+      await page.waitForTimeout(300);
+
+      // 編集モードの保存をクリック
+      await saveButtonInEditMode.click();
+      await page.waitForTimeout(500);
+
+      // 現在のプロパティでタグが選択されていることを確認
+      const renamedTag = page.getByRole('button', { name: renamedTagName });
+      await expect(renamedTag).toBeVisible();
+      await expect(renamedTag).toHaveClass(/bg-blue-500/);
+
+      // 別のプロパティに切り替えて、そちらでもタグが選択されていることを確認
+      await otherProperty.click();
+      await page.waitForTimeout(300);
+
+      const renamedTagOnOther = page.getByRole('button', { name: renamedTagName });
+      await expect(renamedTagOnOther).toBeVisible();
+      await expect(renamedTagOnOther).toHaveClass(/bg-blue-500/);
+    }
+  });
+
+  test('フィールド名を変更しても他のプロパティのフィールド値が維持される', async ({ page }) => {
+    const loaded = await loadConfigAndSelectProperty(page, 'ConnectionString');
+
+    if (loaded) {
+      const timestamp = Date.now();
+      const originalFieldName = `SharedField${timestamp}`;
+      const renamedFieldName = `RenamedSharedField${timestamp}`;
+      const value1 = `接続文字列の値_${timestamp}`;
+      const value2 = `プールサイズの値_${timestamp}`;
+
+      // フィールド編集モードに入る
+      const editButton = page.getByTitle('フィールドを編集');
+      await editButton.click();
+      await page.waitForTimeout(300);
+
+      // 新規フィールドを追加
+      const input = page.getByPlaceholder('新しいフィールド名を入力');
+      await input.fill(originalFieldName);
+      const addButton = page.getByTitle('フィールドを追加');
+      await addButton.click();
+      await page.waitForTimeout(300);
+
+      // 編集モードの保存をクリック
+      const saveButtonInEditMode = page.locator('button.bg-green-500, button.bg-green-600').filter({ hasText: '保存' });
+      await saveButtonInEditMode.click();
+      await page.waitForTimeout(300);
+
+      // フィールドに値を入力
+      const fieldInput = page.getByPlaceholder(`${originalFieldName}を入力`);
+      await fieldInput.fill(value1);
+      await page.waitForTimeout(100);
+
+      // プロパティを保存
+      const mainSaveButton = page.locator('button').filter({ hasText: '保存' }).filter({ has: page.locator('svg') }).last();
+      await mainSaveButton.click();
+      await page.waitForTimeout(500);
+
+      // 別のプロパティに切り替える
+      const otherProperty = page.getByText('MaxPoolSize').first();
+      await otherProperty.click();
+      await page.waitForTimeout(300);
+
+      // 同じフィールドに別の値を入力
+      const sameFieldOnOther = page.getByPlaceholder(`${originalFieldName}を入力`);
+      await sameFieldOnOther.fill(value2);
+      await page.waitForTimeout(100);
+
+      // このプロパティも保存
+      await mainSaveButton.click();
+      await page.waitForTimeout(500);
+
+      // 元のプロパティに戻る（フィールド名変更のため）
+      const originalProperty = page.getByText('ConnectionString').first();
+      await originalProperty.click();
+      await page.waitForTimeout(300);
+
+      // フィールド編集モードに入ってフィールド名を変更
+      await editButton.click();
+      await page.waitForTimeout(300);
+
+      const fieldNameInput = await findInputByValue(page, 'フィールドを削除', originalFieldName);
+      expect(fieldNameInput).not.toBeNull();
+      await fieldNameInput!.clear();
+      await fieldNameInput!.fill(renamedFieldName);
+      await page.waitForTimeout(300);
+
+      // 編集モードの保存をクリック
+      await saveButtonInEditMode.click();
+      await page.waitForTimeout(1000);
+
+      // 現在のプロパティで値が維持されていることを確認
+      const renamedField = page.getByPlaceholder(`${renamedFieldName}を入力`);
+      await expect(renamedField).toBeVisible();
+      await expect(renamedField).toHaveValue(value1);
+
+      // ページをリロードして永続化されたデータを確認
+      await page.reload();
+      await page.waitForTimeout(1000);
+
+      // すべて展開
+      const expandAllButton = page.getByRole('button', { name: 'すべて展開' });
+      await expandAllButton.click();
+      await page.waitForTimeout(300);
+
+      // 別のプロパティを選択
+      await otherProperty.click();
+      await page.waitForTimeout(500);
+
+      // リネーム後のフィールドに値が維持されていることを確認
+      const renamedFieldOnOther = page.getByPlaceholder(`${renamedFieldName}を入力`);
+      await expect(renamedFieldOnOther).toBeVisible();
+      await expect(renamedFieldOnOther).toHaveValue(value2);
+    }
+  });
+});

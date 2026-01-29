@@ -6,7 +6,7 @@ interface FieldsEditorProps {
   fields: Record<string, string>;
   projectFields: Record<string, string>;
   onFieldsChange: (fields: Record<string, string>) => void;
-  onUpdateProjectFields?: (fields: Record<string, string>) => void;
+  onUpdateProjectFields?: (fields: Record<string, string>, renamedMap?: Record<string, string>) => void;
 }
 
 export function FieldsEditor({
@@ -39,13 +39,13 @@ export function FieldsEditor({
     // フィールドを更新（ローカル状態）
     onFieldsChange(newFields);
 
-    // プロジェクト全体に適用
+    // プロジェクト全体に適用（renamedMapを渡して他のプロパティのフィールドも更新）
     if (onUpdateProjectFields) {
       const newProjectFields: Record<string, string> = {};
       for (const name of newNames) {
         newProjectFields[name] = '';
       }
-      onUpdateProjectFields(newProjectFields);
+      onUpdateProjectFields(newProjectFields, renamedMap);
     }
   };
 

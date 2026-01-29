@@ -15,8 +15,8 @@ interface PropertyEditorProps {
   isAssociativeArray?: boolean;
   isDescendantOfAssociativeArray?: boolean;
   onEditingDocChange: (doc: PropertyDoc) => void;
-  onAvailableTagsChange: (tags: string[]) => void;
-  onProjectFieldsChange: (fields: Record<string, string>) => void;
+  onAvailableTagsChange: (tags: string[], renamedMap?: Record<string, string>) => void;
+  onProjectFieldsChange: (fields: Record<string, string>, renamedMap?: Record<string, string>) => void;
   onSave: () => void;
   onToggleAssociativeArray?: (path: string, isAssociative: boolean) => void;
   onCopy: () => void;

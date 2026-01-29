@@ -7,7 +7,7 @@ interface TagEditorProps {
   selectedTags: string[];
   availableTags: string[];
   onSelectedTagsChange: (tags: string[]) => void;
-  onAvailableTagsChange: (tags: string[]) => void;
+  onAvailableTagsChange: (tags: string[], renamedMap?: Record<string, string>) => void;
 }
 
 export function TagEditor({
@@ -38,7 +38,8 @@ export function TagEditor({
     if (JSON.stringify(updatedSelectedTags) !== JSON.stringify(selectedTags)) {
       onSelectedTagsChange(updatedSelectedTags);
     }
-    onAvailableTagsChange(newTags);
+    // renamedMapを渡して他のプロパティのタグも更新できるようにする
+    onAvailableTagsChange(newTags, renamedMap);
   };
 
   return (
