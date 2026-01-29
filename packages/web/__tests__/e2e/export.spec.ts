@@ -121,7 +121,13 @@ test.describe.serial('エクスポート機能', () => {
     const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
     await exportButton.click();
 
+    // HTML形式が選択されていることを確認（ファイル名入力欄が表示される条件）
+    const select = page.getByRole('combobox');
+    await select.selectOption('html');
+    await page.waitForTimeout(200);
+
     const input = page.getByPlaceholder('config-doc');
+    await expect(input).toBeVisible({ timeout: 3000 });
     await input.clear();
     await input.fill('my-config-doc');
 
@@ -164,17 +170,18 @@ test.describe.serial('エクスポート機能', () => {
     const exportButton = page.getByRole('button', { name: /エクスポート/ }).first();
     await exportButton.click();
 
+    // 出力先パス表示領域（font-monoクラスを持つdiv）
+    const pathDisplay = page.locator('.font-mono.break-all');
+
     // 初期状態はHTML (.html)
-    let pathValue = page.getByText(/\.html$/);
-    await expect(pathValue).toBeVisible();
+    await expect(pathDisplay).toContainText('.html', { timeout: 5000 });
 
     // Markdownに変更
     const select = page.getByRole('combobox');
     await select.selectOption('markdown');
 
     // 拡張子が.mdに変わる
-    pathValue = page.getByText(/\.md$/);
-    await expect(pathValue).toBeVisible();
+    await expect(pathDisplay).toContainText('.md', { timeout: 5000 });
   });
 
   test('自動エクスポートチェックボックスが表示される', async ({ page }) => {
