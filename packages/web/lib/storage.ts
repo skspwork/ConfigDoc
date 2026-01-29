@@ -88,6 +88,31 @@ export class StorageService {
     return true;
   }
 
+  async saveAssociativeArrays(
+    configFilePath: string,
+    associativeArrays: { basePath: string; description?: string; createdAt: string }[]
+  ): Promise<void> {
+    const docsFileName = this.getDocsFileName(configFilePath);
+
+    // 絶対パスを相対パスに変換
+    const relativeConfigPath = this.toRelativePath(configFilePath);
+
+    let docs = await this.fs.loadConfigDocs(docsFileName);
+    if (!docs) {
+      docs = {
+        configFilePath: relativeConfigPath,
+        lastModified: new Date().toISOString(),
+        properties: {}
+      };
+    }
+
+    docs.associativeArrays = associativeArrays;
+    docs.lastModified = new Date().toISOString();
+    docs.configFilePath = relativeConfigPath;
+
+    await this.fs.saveConfigDocs(docsFileName, docs);
+  }
+
   // 公開メソッド: docsファイル名を取得
   public getDocsFileName(configFilePath: string): string {
     // 相対パスに変換してから処理

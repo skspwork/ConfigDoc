@@ -92,9 +92,6 @@ export function useConfigManager(): UseConfigManagerReturn {
   // プロジェクトのフィールド定義
   const [projectFields, setProjectFields] = useState<Record<string, string>>(DEFAULT_FIELDS);
 
-  // 連想配列マッピング
-  const [associativeArrays, setAssociativeArrays] = useState<AssociativeArrayMapping[]>([]);
-
   // 選択されたノードの型
   const [selectedNodeType, setSelectedNodeType] = useState<'object' | 'array' | 'string' | 'number' | 'boolean' | undefined>(undefined);
 
@@ -109,6 +106,9 @@ export function useConfigManager(): UseConfigManagerReturn {
   const [inheritedFields, setInheritedFields] = useState<Record<string, string>>({});
 
   const activeConfig = loadedConfigs[activeConfigIndex];
+
+  // 連想配列マッピング（ファイルごとに管理）
+  const associativeArrays = activeConfig?.docs?.associativeArrays || [];
 
   const showToast = useCallback((message: string, type: Toast['type'] = 'success') => {
     const id = Date.now().toString();
@@ -275,10 +275,7 @@ export function useConfigManager(): UseConfigManagerReturn {
             if (metaResult.success && metaResult.data?.fields) {
               setProjectFields(metaResult.data.fields);
             }
-
-            if (metaResult.success && metaResult.data?.associativeArrays) {
-              setAssociativeArrays(metaResult.data.associativeArrays);
-            }
+            // 連想配列はファイルごとのdocsから読み込まれるため、ここでは読み込まない
           }
         }
 
@@ -888,6 +885,8 @@ export function useConfigManager(): UseConfigManagerReturn {
 
   // 連想配列の登録/解除
   const handleToggleAssociativeArray = useCallback(async (path: string, isAssociative: boolean) => {
+    if (!activeConfig) return;
+
     let newMappings: AssociativeArrayMapping[];
 
     if (isAssociative) {
@@ -895,7 +894,7 @@ export function useConfigManager(): UseConfigManagerReturn {
       const wildcardedBasePath = convertToWildcardBasePath(
         path,
         associativeArrays,
-        activeConfig?.configData
+        activeConfig.configData
       );
 
       // 追加
@@ -911,7 +910,7 @@ export function useConfigManager(): UseConfigManagerReturn {
       const wildcardedBasePath = convertToWildcardBasePath(
         path,
         associativeArrays,
-        activeConfig?.configData
+        activeConfig.configData
       );
 
       // このパスを親として持つ子孫のワイルドカードマッピングも削除
@@ -935,21 +934,36 @@ export function useConfigManager(): UseConfigManagerReturn {
       });
     }
 
-    setAssociativeArrays(newMappings);
+    // loadedConfigsを更新（ファイルごとにassociativeArraysを管理）
+    setLoadedConfigs(prev => prev.map((config, index) => {
+      if (index === activeConfigIndex) {
+        return {
+          ...config,
+          docs: {
+            ...config.docs,
+            associativeArrays: newMappings
+          }
+        };
+      }
+      return config;
+    }));
 
-    // APIに保存
+    // APIに保存（ファイルごとのdocsに保存）
     try {
-      await fetch('/api/config/metadata', {
+      await fetch('/api/config/associative-arrays', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ associativeArrays: newMappings })
+        body: JSON.stringify({
+          configFilePath: activeConfig.filePath,
+          associativeArrays: newMappings
+        })
       });
       showToast(isAssociative ? '連想配列として登録しました' : '連想配列登録を解除しました');
     } catch (error) {
       console.error('Failed to save associative array mapping:', error);
       showToast('連想配列設定の保存に失敗しました', 'error');
     }
-  }, [associativeArrays, activeConfig?.configData, showToast]);
+  }, [activeConfig, activeConfigIndex, associativeArrays, showToast]);
 
   return {
     loadedConfigs,

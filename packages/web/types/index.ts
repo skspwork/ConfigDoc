@@ -18,6 +18,7 @@ export interface ConfigDocs {
   configFilePath: string;
   lastModified: string;
   properties: Record<string, PropertyDoc>;
+  associativeArrays?: AssociativeArrayMapping[];  // 連想配列として登録されたパス（ファイルごと）
 }
 
 export interface PropertyDoc {
