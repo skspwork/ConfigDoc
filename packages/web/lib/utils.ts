@@ -9,7 +9,16 @@ export function escapeTableCell(text: string): string {
   return text
     .replace(/\|/g, '\\|')  // パイプをエスケープ
     .replace(/\n/g, '<br>') // 改行をHTMLのbrタグに変換
-    .replace(/\r/g, '');     // キャリッジリターンを削除
+    .replace(/\r/g, '')     // キャリッジリターンを削除
+    .replace(/\$/g, '\\$'); // ドル記号をエスケープ（KaTeX数式解釈を防止）
+}
+
+/**
+ * Markdown内で数式として解釈される文字をエスケープ
+ * KaTeXやMathJaxが$を数式の区切り文字として認識するのを防止
+ */
+export function escapeMathDelimiters(text: string): string {
+  return text.replace(/\$/g, '\\$');
 }
 
 /**
@@ -21,7 +30,8 @@ export function escapeHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/\$/g, '&#36;'); // ドル記号をエスケープ（KaTeX/MathJax数式解釈を防止）
 }
 
 /**

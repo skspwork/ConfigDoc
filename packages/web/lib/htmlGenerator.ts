@@ -1134,11 +1134,11 @@ export class HtmlGenerator {
       return false;
     }
 
-    // HTML エスケープ
+    // HTML エスケープ（$記号もエスケープしてKaTeX/MathJax数式解釈を防止）
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
-      return div.innerHTML;
+      return div.innerHTML.replace(/\\$/g, '&#36;');
     }
 
     // 初期化

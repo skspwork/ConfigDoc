@@ -2,7 +2,7 @@ import { FileSystemService } from './fileSystem';
 import { StorageService } from './storage';
 import { ConfigParser } from './configParser';
 import { sortTagsByOrder } from './configManagerUtils';
-import { getPropertyByPath } from './utils';
+import { getPropertyByPath, escapeMathDelimiters } from './utils';
 import { findAndMergeDocumentation } from './templatePath';
 import { PropertyDoc } from '@/types';
 
@@ -65,10 +65,10 @@ export class MarkdownGenerator {
               typeof item !== 'object' || item === null
             );
             if (hasPrimitiveElements) {
-              markdown += `**値:** \`${JSON.stringify(value)}\`\n\n`;
+              markdown += `**値:** \`${escapeMathDelimiters(JSON.stringify(value))}\`\n\n`;
             }
           } else if (!isObject) {
-            markdown += `**値:** \`${String(value)}\`\n\n`;
+            markdown += `**値:** \`${escapeMathDelimiters(String(value))}\`\n\n`;
           }
         }
 
@@ -83,7 +83,7 @@ export class MarkdownGenerator {
             for (const fieldKey of fieldKeys) {
               const fieldValue = doc.fields[fieldKey];
               if (fieldValue) {
-                markdown += `**${fieldKey}:**\n\n${fieldValue}\n\n`;
+                markdown += `**${fieldKey}:**\n\n${escapeMathDelimiters(fieldValue)}\n\n`;
               }
             }
           }
@@ -171,11 +171,11 @@ export class MarkdownGenerator {
               typeof item !== 'object' || item === null
             );
             if (hasPrimitiveElements) {
-              markdown += `**値:** \`${JSON.stringify(value)}\`\n\n`;
+              markdown += `**値:** \`${escapeMathDelimiters(JSON.stringify(value))}\`\n\n`;
             }
           } else if (!isObject) {
             // プリミティブ値を表示
-            markdown += `**値:** \`${String(value)}\`\n\n`;
+            markdown += `**値:** \`${escapeMathDelimiters(String(value))}\`\n\n`;
           }
         }
 
@@ -191,7 +191,7 @@ export class MarkdownGenerator {
             for (const fieldKey of fieldKeys) {
               const fieldValue = doc.fields[fieldKey];
               if (fieldValue) {
-                markdown += `**${fieldKey}:**\n\n${fieldValue}\n\n`;
+                markdown += `**${fieldKey}:**\n\n${escapeMathDelimiters(fieldValue)}\n\n`;
               }
             }
           }
