@@ -114,12 +114,13 @@ export class HtmlGenerator {
       </div>
     </header>
 
+    <div class="config-tabs" id="configTabs"></div>
+
     <div class="content">
       <aside class="sidebar">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="検索..." />
+          <input type="text" id="searchInput" placeholder="現在のファイル内を検索..." />
         </div>
-        <div class="config-tabs" id="configTabs"></div>
         <div class="tree-container" id="treeContainer"></div>
       </aside>
       <main class="main-content">
@@ -529,33 +530,48 @@ export class HtmlGenerator {
     }
 
     .config-tabs {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      padding: 15px;
       display: flex;
-      flex-direction: column;
-      gap: 5px;
+      flex-direction: row;
+      gap: 10px;
+      overflow-x: auto;
+      flex-wrap: wrap;
     }
 
     .config-tab {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 10px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
       background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
+      min-width: fit-content;
+    }
+
+    .config-tab.has-path {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
     }
 
     .config-tab:hover {
       background: #f3f4f6;
+      border-color: #d1d5db;
     }
 
     .config-tab.active {
       background: #2563eb;
       color: white;
       border-color: #2563eb;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
     }
 
     .config-tab.active .config-tab-path {
@@ -567,17 +583,18 @@ export class HtmlGenerator {
     }
 
     .config-tab-filename {
-      font-weight: 500;
-      font-size: 0.9rem;
+      font-weight: 600;
+      font-size: 0.95rem;
     }
 
     .config-tab-path {
       font-size: 0.75rem;
       color: #9ca3af;
+      font-family: 'Courier New', monospace;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 100%;
+      max-width: 250px;
     }
 
     .tree-container {
@@ -978,9 +995,15 @@ export class HtmlGenerator {
     }
 
     // 設定タブを描画
-    function renderConfigTabs(matchedConfigIndexes = null) {
+    function renderConfigTabs() {
       const tabsEl = document.getElementById('configTabs');
       tabsEl.innerHTML = '';
+
+      // ファイル名の重複をチェック
+      const fileNameCounts = {};
+      configs.forEach(config => {
+        fileNameCounts[config.fileName] = (fileNameCounts[config.fileName] || 0) + 1;
+      });
 
       configs.forEach((config, index) => {
         const tab = document.createElement('div');
@@ -990,24 +1013,34 @@ export class HtmlGenerator {
           className += ' active';
         }
 
-        // 検索中で、マッチしない設定ファイルは非表示
-        if (matchedConfigIndexes !== null && !matchedConfigIndexes.includes(index)) {
-          className += ' hidden';
+        // 同一ファイル名が複数ある場合のみパスを表示
+        const hasDuplicate = fileNameCounts[config.fileName] > 1;
+
+        if (hasDuplicate) {
+          className += ' has-path';
         }
 
         tab.className = className;
-        tab.innerHTML = \`
-          <div class="config-tab-filename">\${escapeHtml(config.fileName)}</div>
-          <div class="config-tab-path" title="\${escapeHtml(config.filePath)}">\${escapeHtml(config.filePath)}</div>
-        \`;
+        if (hasDuplicate) {
+          tab.innerHTML = \`
+            <span class="config-tab-filename">\${escapeHtml(config.fileName)}</span>
+            <span class="config-tab-path" title="\${escapeHtml(config.filePath)}">\${escapeHtml(config.filePath)}</span>
+          \`;
+        } else {
+          tab.innerHTML = \`
+            <span class="config-tab-filename">\${escapeHtml(config.fileName)}</span>
+          \`;
+        }
+
         tab.addEventListener('click', () => {
           activeConfigIndex = index;
-          renderConfigTabs(matchedConfigIndexes);
+          renderConfigTabs();
           renderCurrentConfig();
-          // タブ切り替え後、検索フィルタを適用
-          if (currentSearchQuery) {
-            applySearchFilter(currentSearchQuery);
-          }
+          // タブ切り替え後、検索フィルタをクリア
+          const searchInput = document.getElementById('searchInput');
+          searchInput.value = '';
+          currentSearchQuery = '';
+          applySearchFilter('');
         });
         tabsEl.appendChild(tab);
       });
@@ -1068,7 +1101,7 @@ export class HtmlGenerator {
       });
     }
 
-    // 検索機能（全設定ファイル対象）
+    // 検索機能（現在選択中のファイル内のみ）
     function setupSearch() {
       const searchInput = document.getElementById('searchInput');
       searchInput.addEventListener('input', (e) => {
@@ -1076,65 +1109,14 @@ export class HtmlGenerator {
         currentSearchQuery = query;
 
         if (!query.trim()) {
-          // 検索クエリが空の場合、すべてのタブを表示
-          renderConfigTabs(null);
-          renderCurrentConfig();
+          // 検索クエリが空の場合、すべてのツリー項目を表示
+          applySearchFilter('');
           return;
-        }
-
-        // 全設定ファイルから検索してマッチした項目を収集
-        let foundInConfigs = [];
-        configs.forEach((config, index) => {
-          const tree = buildTree(config.configData, '', config.docs, config.configData);
-          const hasMatch = searchInTreeForConfig(tree, query, config);
-          if (hasMatch) {
-            foundInConfigs.push(index);
-          }
-        });
-
-        // マッチした設定ファイルのタブのみ表示
-        renderConfigTabs(foundInConfigs);
-
-        // マッチした最初の設定ファイルに切り替え（現在のタブがマッチしていない場合）
-        if (foundInConfigs.length > 0 && !foundInConfigs.includes(activeConfigIndex)) {
-          activeConfigIndex = foundInConfigs[0];
-          renderConfigTabs(foundInConfigs);
-          renderCurrentConfig();
         }
 
         // 現在表示中のツリー項目をフィルタリング
         applySearchFilter(query);
       });
-    }
-
-    // ツリー内を検索してマッチするか判定（特定の設定ファイル用）
-    function searchInTreeForConfig(nodes, query, config) {
-      for (const node of nodes) {
-        const text = node.key.toLowerCase();
-        const path = node.path.toLowerCase();
-
-        // プロパティ名とパスで検索
-        if (text.includes(query) || path.includes(query)) {
-          return true;
-        }
-
-        // ドキュメント（フィールド内容）でも検索
-        const doc = config.docs.properties && config.docs.properties[node.path];
-        if (doc && doc.fields) {
-          for (const [label, value] of Object.entries(doc.fields)) {
-            if (value && value.toLowerCase().includes(query)) {
-              return true;
-            }
-          }
-        }
-
-        if (node.children && node.children.length > 0) {
-          if (searchInTreeForConfig(node.children, query, config)) {
-            return true;
-          }
-        }
-      }
-      return false;
     }
 
     // HTML エスケープ（$記号もエスケープしてKaTeX/MathJax数式解釈を防止）
