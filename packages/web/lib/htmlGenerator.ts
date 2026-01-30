@@ -1059,7 +1059,7 @@ export class HtmlGenerator {
       renderTree(tree, treeEl);
     }
 
-    // 検索フィルタを適用（ツリー項目のフィルタリング - プロパティ名、パス、説明、備考を検索）
+    // 検索フィルタを適用（ツリー項目のフィルタリング - プロパティ名、パス、タグ、フィールド値を検索）
     function applySearchFilter(query) {
       const config = configs[activeConfigIndex];
       const items = document.querySelectorAll('.tree-item');
@@ -1074,14 +1074,33 @@ export class HtmlGenerator {
           matched = true;
         }
 
-        // ドキュメント（フィールド内容）でも検索
+        // ドキュメント（タグとフィールド内容）でも検索
         if (!matched) {
-          const doc = config.docs.properties && config.docs.properties[item.dataset.path];
-          if (doc && doc.fields) {
-            for (const [label, value] of Object.entries(doc.fields)) {
-              if (value && value.toLowerCase().includes(query)) {
-                matched = true;
-                break;
+          // テンプレート継承も考慮してドキュメントを取得
+          const doc = findAndMergeDocumentation(
+            item.dataset.path,
+            config.docs.properties,
+            config.configData
+          );
+
+          if (doc) {
+            // タグで検索
+            if (doc.tags && Array.isArray(doc.tags)) {
+              for (const tag of doc.tags) {
+                if (tag && tag.toLowerCase().includes(query)) {
+                  matched = true;
+                  break;
+                }
+              }
+            }
+
+            // フィールド内容で検索
+            if (!matched && doc.fields) {
+              for (const [label, value] of Object.entries(doc.fields)) {
+                if (value && value.toLowerCase().includes(query)) {
+                  matched = true;
+                  break;
+                }
               }
             }
           }
