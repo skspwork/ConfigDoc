@@ -601,12 +601,14 @@ export class HtmlGenerator {
       padding: 10px;
       max-height: 600px;
       overflow-y: auto;
+      overflow-x: auto;
     }
 
     .tree-container > ul {
       list-style: none;
       padding: 0;
       margin: 0;
+      min-width: max-content;
     }
 
     .tree-node {
@@ -614,6 +616,7 @@ export class HtmlGenerator {
       padding-left: 20px;
       border-left: 1px solid #e5e7eb;
       list-style: none;
+      min-width: max-content;
     }
 
     .tree-node.hidden {
@@ -626,13 +629,15 @@ export class HtmlGenerator {
       cursor: pointer;
       border-radius: 6px;
       transition: all 0.15s ease;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 0.9rem;
       position: relative;
       background: transparent;
       border: 1px solid transparent;
+      min-width: max-content;
+      white-space: nowrap;
     }
 
     .tree-item:hover {
@@ -684,9 +689,6 @@ export class HtmlGenerator {
     }
 
     .tree-label {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
