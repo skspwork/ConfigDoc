@@ -1,35 +1,13 @@
-import { afterAll } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-
 /**
- * 全テスト終了後のクリーンアップ
- * テストがクラッシュして残った一時ディレクトリを削除
+ * Vitestユニットテスト用グローバルセットアップ
+ *
+ * 注意: setupFilesは各テストファイルごとに実行されるため、
+ * afterAllフックを使用したグローバルクリーンアップは並列実行時に
+ * 他のテストのディレクトリを削除してしまう可能性があります。
+ *
+ * 各テストは自身のafterEachでクリーンアップを行うため、
+ * ここでのグローバルクリーンアップは不要です。
  */
-afterAll(() => {
-  try {
-    const tmpDir = os.tmpdir();
-    const entries = fs.readdirSync(tmpDir);
 
-    // config-doc-test-で始まるディレクトリを検出
-    const testDirs = entries.filter(entry =>
-      entry.startsWith('config-doc-test-') &&
-      fs.statSync(path.join(tmpDir, entry)).isDirectory()
-    );
-
-    // 見つかったテストディレクトリを削除
-    for (const testDir of testDirs) {
-      const fullPath = path.join(tmpDir, testDir);
-      try {
-        fs.rmSync(fullPath, { recursive: true, force: true });
-        console.log(`[Cleanup] Removed stale test directory: ${testDir}`);
-      } catch (error) {
-        console.warn(`[Cleanup] Failed to remove ${testDir}:`, error);
-      }
-    }
-  } catch (error) {
-    // クリーンアップエラーは警告のみ
-    console.warn('[Cleanup] Failed to cleanup stale test directories:', error);
-  }
-});
+// 現在は特にグローバル設定は不要
+// 将来的に必要な場合はここに追加
