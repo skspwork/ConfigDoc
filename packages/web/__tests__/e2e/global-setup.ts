@@ -4,21 +4,25 @@ import os from 'os';
 import path from 'path';
 
 async function globalSetup(config: FullConfig) {
-  // 一時ディレクトリを作成
-  const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-doc-test-'));
+  // ベースとなる一時ディレクトリを作成（各テストがサブディレクトリを作成）
+  const baseTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-doc-e2e-base-'));
 
-  // 環境変数に保存（teardownとAPIルートで使用）
-  process.env.TEST_CONFIG_DOC_DIR = testDir;
+  // 環境変数に保存（teardownで使用）
+  process.env.E2E_BASE_TEST_DIR = baseTestDir;
 
-  // sampleディレクトリをコピー（テストで必要）
+  // sampleディレクトリをベースディレクトリにコピー（全テストで共有・読み取り専用）
   const sampleSrc = path.join(process.cwd(), '..', '..', 'sample');
-  const sampleDest = path.join(testDir, 'sample');
-  fs.cpSync(sampleSrc, sampleDest, { recursive: true });
+  const sampleDest = path.join(baseTestDir, 'sample');
+
+  if (fs.existsSync(sampleSrc)) {
+    fs.cpSync(sampleSrc, sampleDest, { recursive: true });
+  }
 
   // パスをファイルに保存（プロセス間共有用）
-  fs.writeFileSync(path.join(os.tmpdir(), '.config-doc-test-dir'), testDir);
+  const pathFile = path.join(os.tmpdir(), '.config-doc-e2e-base-dir');
+  fs.writeFileSync(pathFile, baseTestDir);
 
-  console.log(`[E2E Setup] Test directory created: ${testDir}`);
+  console.log(`[E2E Setup] Base test directory created: ${baseTestDir}`);
 }
 
 export default globalSetup;

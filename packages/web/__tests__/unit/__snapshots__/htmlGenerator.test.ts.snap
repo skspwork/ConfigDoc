@@ -114,6 +114,12 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
       min-width: fit-content;
     }
 
+    .config-tab.has-path {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
     .config-tab:hover {
       background: #f3f4f6;
       border-color: #d1d5db;
@@ -140,21 +146,27 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
     }
 
     .config-tab-path {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #9ca3af;
       font-family: 'Courier New', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 250px;
     }
 
     .tree-container {
       padding: 10px;
       max-height: 600px;
       overflow-y: auto;
+      overflow-x: auto;
     }
 
     .tree-container > ul {
       list-style: none;
       padding: 0;
       margin: 0;
+      min-width: max-content;
     }
 
     .tree-node {
@@ -162,6 +174,7 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
       padding-left: 20px;
       border-left: 1px solid #e5e7eb;
       list-style: none;
+      min-width: max-content;
     }
 
     .tree-node.hidden {
@@ -174,13 +187,15 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
       cursor: pointer;
       border-radius: 6px;
       transition: all 0.15s ease;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 0.9rem;
       position: relative;
       background: transparent;
       border: 1px solid transparent;
+      min-width: max-content;
+      white-space: nowrap;
     }
 
     .tree-item:hover {
@@ -232,9 +247,6 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
     }
 
     .tree-label {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -970,6 +982,12 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
       const tabsEl = document.getElementById('configTabs');
       tabsEl.innerHTML = '';
 
+      // ファイル名の重複をチェック
+      const fileNameCounts = {};
+      configs.forEach(config => {
+        fileNameCounts[config.fileName] = (fileNameCounts[config.fileName] || 0) + 1;
+      });
+
       configs.forEach((config, index) => {
         const tab = document.createElement('div');
         let className = 'config-tab';
@@ -978,11 +996,25 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
           className += ' active';
         }
 
+        // 同一ファイル名が複数ある場合のみパスを表示
+        const hasDuplicate = fileNameCounts[config.fileName] > 1;
+
+        if (hasDuplicate) {
+          className += ' has-path';
+        }
+
         tab.className = className;
-        tab.innerHTML = \`
-          <span class="config-tab-filename">\${escapeHtml(config.fileName)}</span>
-          <span class="config-tab-path" title="\${escapeHtml(config.filePath)}">\${escapeHtml(config.filePath)}</span>
-        \`;
+        if (hasDuplicate) {
+          tab.innerHTML = \`
+            <span class="config-tab-filename">\${escapeHtml(config.fileName)}</span>
+            <span class="config-tab-path" title="\${escapeHtml(config.filePath)}">\${escapeHtml(config.filePath)}</span>
+          \`;
+        } else {
+          tab.innerHTML = \`
+            <span class="config-tab-filename">\${escapeHtml(config.fileName)}</span>
+          \`;
+        }
+
         tab.addEventListener('click', () => {
           activeConfigIndex = index;
           renderConfigTabs();
@@ -1008,7 +1040,7 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
       renderTree(tree, treeEl);
     }
 
-    // 検索フィルタを適用（ツリー項目のフィルタリング - プロパティ名、パス、説明、備考を検索）
+    // 検索フィルタを適用（ツリー項目のフィルタリング - プロパティ名、パス、タグ、フィールド値を検索）
     function applySearchFilter(query) {
       const config = configs[activeConfigIndex];
       const items = document.querySelectorAll('.tree-item');
@@ -1023,14 +1055,33 @@ exports[`HtmlGenerator > generates HTML with correct format 1`] = `
           matched = true;
         }
 
-        // ドキュメント（フィールド内容）でも検索
+        // ドキュメント（タグとフィールド内容）でも検索
         if (!matched) {
-          const doc = config.docs.properties && config.docs.properties[item.dataset.path];
-          if (doc && doc.fields) {
-            for (const [label, value] of Object.entries(doc.fields)) {
-              if (value && value.toLowerCase().includes(query)) {
-                matched = true;
-                break;
+          // テンプレート継承も考慮してドキュメントを取得
+          const doc = findAndMergeDocumentation(
+            item.dataset.path,
+            config.docs.properties,
+            config.configData
+          );
+
+          if (doc) {
+            // タグで検索
+            if (doc.tags && Array.isArray(doc.tags)) {
+              for (const tag of doc.tags) {
+                if (tag && tag.toLowerCase().includes(query)) {
+                  matched = true;
+                  break;
+                }
+              }
+            }
+
+            // フィールド内容で検索
+            if (!matched && doc.fields) {
+              for (const [label, value] of Object.entries(doc.fields)) {
+                if (value && value.toLowerCase().includes(query)) {
+                  matched = true;
+                  break;
+                }
               }
             }
           }

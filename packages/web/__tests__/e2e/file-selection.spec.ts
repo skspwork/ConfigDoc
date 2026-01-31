@@ -1,7 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('ファイル選択・読み込み', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, testWorkDir }) => {
+    process.env.E2E_TEST_WORK_DIR = testWorkDir;
     await page.goto('/');
   });
 

@@ -1,8 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // 設定ファイルを共有するため、並列実行すると干渉が起きる
 test.describe.serial('エクスポート機能', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, testWorkDir }) => {
+    process.env.E2E_TEST_WORK_DIR = testWorkDir;
     await page.goto('/');
   });
 

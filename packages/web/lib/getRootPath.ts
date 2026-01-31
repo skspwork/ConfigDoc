@@ -3,12 +3,29 @@ import os from 'os';
 import path from 'path';
 
 /**
- * E2Eテスト用の一時ディレクトリパスを取得します。
- * global-setup.tsで作成されたパスファイルから読み込みます。
+ * E2Eテスト用のディレクトリパスを取得します。
+ * テストコンテキストから提供されたパスを環境変数経由で取得します。
  */
 function getE2ETestDir(): string | null {
+  // テストごとの作業ディレクトリ（優先）
+  if (process.env.E2E_TEST_WORK_DIR) {
+    const workDir = process.env.E2E_TEST_WORK_DIR;
+    if (fs.existsSync(workDir)) {
+      return workDir;
+    }
+  }
+
+  // 旧実装との互換性のため、ベースディレクトリもチェック
+  if (process.env.E2E_BASE_TEST_DIR) {
+    const baseDir = process.env.E2E_BASE_TEST_DIR;
+    if (fs.existsSync(baseDir)) {
+      return baseDir;
+    }
+  }
+
+  // レガシー実装（global-setupで作成されたパスファイルから読み込み）
   try {
-    const pathFile = path.join(os.tmpdir(), '.config-doc-test-dir');
+    const pathFile = path.join(os.tmpdir(), '.config-doc-e2e-base-dir');
     if (fs.existsSync(pathFile)) {
       const testDir = fs.readFileSync(pathFile, 'utf-8').trim();
       if (testDir && fs.existsSync(testDir)) {
@@ -18,6 +35,7 @@ function getE2ETestDir(): string | null {
   } catch {
     // ファイル読み込みエラーは無視
   }
+
   return null;
 }
 

@@ -11,7 +11,8 @@ describe('MarkdownTableGenerator', () => {
   });
 
   afterEach(() => {
-    fixtures.cleanup();
+    // 確実にクリーンアップ（エラーが発生しても継続）
+    fixtures?.cleanup();
   });
 
   test('generates markdown table with correct format', async () => {

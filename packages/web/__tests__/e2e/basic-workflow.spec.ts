@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('ConfigDoc 基本ワークフロー', () => {
   test('アプリケーションが起動する', async ({ page }) => {

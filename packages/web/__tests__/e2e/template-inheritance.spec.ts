@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page } from './fixtures';
 
 // テスト用のヘルパー: 設定ファイルを読み込む
 async function loadSampleConfig(page: Page): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // タブが存在しない場合はファイルを追加するヘルパー
 async function ensureTabExists(page: any): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // テスト用のヘルパー: 設定ファイルを読み込んでプロパティを選択
 async function loadConfigAndSelectProperty(page: any) {

@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 
 /**
- * ジェネレーターテスト用の共通フィクスチャ
+ * ジェネレーターテスト用の共通フィクスチャ（分離強化版）
  */
 export class GeneratorTestFixtures {
   public readonly testRootPath: string;
@@ -10,7 +12,12 @@ export class GeneratorTestFixtures {
   private readonly metadataDir: string;
 
   constructor(testName: string) {
-    this.testRootPath = path.join(process.cwd(), '__tests__', 'fixtures', testName);
+    // 一意のディレクトリ名を生成（タイムスタンプ + ランダム）
+    const uniqueId = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const dirName = `config-doc-test-${testName}-${uniqueId}`;
+
+    // OSの一時ディレクトリを使用
+    this.testRootPath = path.join(os.tmpdir(), dirName);
     this.configDocDir = path.join(this.testRootPath, '.config_doc');
     this.metadataDir = path.join(this.configDocDir, 'metadata', 'docs');
   }
@@ -19,12 +26,14 @@ export class GeneratorTestFixtures {
    * テスト用のディレクトリとファイルを作成
    */
   setup(): void {
-    // テスト用ディレクトリを作成
-    if (!fs.existsSync(this.testRootPath)) {
-      fs.mkdirSync(this.testRootPath, { recursive: true });
-    }
+    try {
+      // ディレクトリが既に存在する場合は削除
+      if (fs.existsSync(this.testRootPath)) {
+        fs.rmSync(this.testRootPath, { recursive: true, force: true });
+      }
 
-    fs.mkdirSync(this.metadataDir, { recursive: true });
+      // テスト用ディレクトリを作成
+      fs.mkdirSync(this.metadataDir, { recursive: true });
 
     // テスト用の設定ファイル
     const testConfig = {
@@ -122,14 +131,25 @@ export class GeneratorTestFixtures {
       path.join(this.metadataDir, 'appsettings.docs.json'),
       JSON.stringify(docs, null, 2)
     );
+    } catch (error) {
+      // セットアップ失敗時は確実にクリーンアップ
+      this.cleanup();
+      throw error;
+    }
   }
 
   /**
    * テストディレクトリをクリーンアップ
+   * エラーが発生しても継続（べき等性を保証）
    */
   cleanup(): void {
-    if (fs.existsSync(this.testRootPath)) {
-      fs.rmSync(this.testRootPath, { recursive: true, force: true });
+    try {
+      if (fs.existsSync(this.testRootPath)) {
+        fs.rmSync(this.testRootPath, { recursive: true, force: true });
+      }
+    } catch (error) {
+      // クリーンアップエラーは警告のみ（テスト失敗にしない）
+      console.warn(`Failed to cleanup test directory ${this.testRootPath}:`, error);
     }
   }
 }

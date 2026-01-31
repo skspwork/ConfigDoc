@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // テスト用のヘルパー: 設定ファイルを読み込んでプロパティを選択
 async function loadConfigAndSelectProperty(page: any) {
@@ -59,7 +59,8 @@ async function loadConfigAndSelectProperty(page: any) {
 }
 
 test.describe('プロパティドキュメント編集', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, testWorkDir }) => {
+    process.env.E2E_TEST_WORK_DIR = testWorkDir;
     await page.goto('/');
   });
 
